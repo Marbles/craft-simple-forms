@@ -1,0 +1,75 @@
+{% extends 'simple-forms/_layouts/settings' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = 'AntiSpam'|t('simple-forms') %}
+
+{% macro configWarning(setting) -%}
+    {% set setting = '<code>'~setting~'</code>' %}
+    {{ "This is being overridden by the {setting} config setting in your {file} config file."|t('simple-forms', {
+        setting: setting,
+        file: 'simple-forms.php'
+    })|raw }}
+{%- endmacro %}
+
+{% from _self import configWarning %}
+
+{% block fields %}
+    {{ forms.lightswitchField({
+        label: 'Honey Pot Enabled'|t('simple-forms'),
+        id: 'honeypotEnabled',
+        name: 'settings[honeypotEnabled]',
+        on: settings.honeypotEnabled,
+        instructions: 'Add a hidden field to the forms that could be filled out by spambots.'|t('simple-forms'),
+        disabled:     'honeypotEnabled' in overrides,
+        warning:      'honeypotEnabled' in overrides ? configWarning('honeypotEnabled'),
+        first: true
+    }) }}
+    {{ forms.textField({
+        label: 'Honey Pot Name'|t('simple-forms'),
+        id: 'honeypotName',
+        name: 'settings[honeypotName]',
+        value: settings.honeypotName,
+        disabled:     'honeypotName' in overrides,
+        warning:      'honeypotName' in overrides ? configWarning('honeypotName'),
+        instructions: 'The name of the honeypot field.'|t('simple-forms')
+    }) }}
+    <hr>
+    {{ forms.lightswitchField({
+        label: 'Time check enabled'|t('simple-forms'),
+        id: 'timeCheckEnabled',
+        name: 'settings[timeCheckEnabled]',
+        on: settings.timeCheckEnabled,
+        disabled:     'timeCheckEnabled' in overrides,
+        warning:      'timeCheckEnabled' in overrides ? configWarning('timeCheckEnabled'),
+        instructions: 'Check how long someone took to fill out a form.'|t('simple-forms')
+    }) }}
+    {{ forms.textField({
+        label: 'Minimum time in seconds'|t('simple-forms'),
+        id: 'minimumTimeInSeconds',
+        name: 'settings[minimumTimeInSeconds]',
+        value: settings.minimumTimeInSeconds,
+        disabled:     'minimumTimeInSeconds' in overrides,
+        warning:      'minimumTimeInSeconds' in overrides ? configWarning('minimumTimeInSeconds'),
+        instructions: 'The minimum amount of seconds that is required to fill out a form.'|t('simple-forms')
+    }) }}
+    <hr>
+    {{ forms.lightswitchField({
+        label: 'Duplicate check enabled'|t('simple-forms'),
+        id: 'duplicateCheckEnabled',
+        name: 'settings[duplicateCheckEnabled]',
+        on: settings.duplicateCheckEnabled,
+        disabled:     'duplicateCheckEnabled' in overrides,
+        warning:      'duplicateCheckEnabled' in overrides ? configWarning('duplicateCheckEnabled'),
+        instructions: 'Check for duplications on submission.'|t('simple-forms')
+    }) }}
+    <hr>
+    {{ forms.lightswitchField({
+        label: 'Origin check enabled'|t('simple-forms'),
+        id: 'originCheckEnabled',
+        name: 'settings[originCheckEnabled]',
+        on: settings.originCheckEnabled,
+        disabled:     'originCheckEnabled' in overrides,
+        warning:      'originCheckEnabled' in overrides ? configWarning('originCheckEnabled'),
+        instructions: 'Check the domain and user agent.'|t('simple-forms')
+    }) }}
+{% endblock %}

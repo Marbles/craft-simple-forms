@@ -1,0 +1,36 @@
+{% extends 'simple-forms/_layouts/settings' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = 'Submissions'|t('simple-forms') %}
+
+{% macro configWarning(setting) -%}
+    {% set setting = '<code>'~setting~'</code>' %}
+    {{ "This is being overridden by the {setting} config setting in your {file} config file."|t('simple-forms', {
+        setting: setting,
+        file: 'simple-forms.php'
+    })|raw }}
+{%- endmacro %}
+
+{% from _self import configWarning %}
+
+{% block fields %}
+    {{ forms.lightswitchField({
+        label: 'Clean up submissions'|t('simple-forms'),
+        id: 'cleanUpSubmissions',
+        name: 'settings[cleanUpSubmissions]',
+        on: settings.cleanUpSubmissions,
+        disabled:     'cleanUpSubmissions' in overrides,
+        warning:      'cleanUpSubmissions' in overrides ? configWarning('cleanUpSubmissions'),
+        instructions: 'Allow a cronjob to clean up submissions from a certain date.'|t('simple-forms'),
+        first: true,
+    }) }}
+    {{ forms.textField({
+        label: 'Clean up submissions from'|t('simple-forms'),
+        id: 'cleanUpSubmissionsFrom',
+        name: 'settings[cleanUpSubmissionsFrom]',
+        value: settings.cleanUpSubmissionsFrom,
+        disabled:     'cleanUpSubmissionsFrom' in overrides,
+        warning:      'cleanUpSubmissionsFrom' in overrides ? configWarning('cleanUpSubmissionsFrom'),
+        instructions: 'The submissions that will be cleaned up are from when the cronjob gets triggered minus this given date.'|t('simple-forms')
+    }) }}
+{% endblock %}

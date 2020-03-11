@@ -1,0 +1,161 @@
+{% import '_includes/forms' as forms %}
+{% set activeAfterSubmit = form.afterSubmit ?: 'afterSubmitText' %}
+
+{% set afterSubmissionOptions = [
+    {
+        label: 'Redirect to same page and show text'|t('simple-forms'),
+        value: 'afterSubmitText'
+    },
+    {
+        label: 'Redirect to a page'|t('simple-forms'),
+        value: 'redirectEntryId'
+    },
+    {
+        label: 'Redirect to a URL'|t('simple-forms'),
+        value: 'redirectUrl'
+    },
+] %}
+{% if currentUser.admin %}
+    {% set afterSubmissionOptions = afterSubmissionOptions|merge([
+        {
+            label: 'Submit form to a different URL'|t('simple-forms'),
+            value: 'submitAction'
+        }
+    ]) %}
+{% endif %}
+
+{{ forms.textField({
+    label: 'Name'|t('simple-forms'),
+    id: 'name',
+    name: 'name',
+    value: form.name,
+    errors: form.getErrors('name'),
+    first: true,
+    autofocus: true,
+    required: true,
+    instructions: 'Name of this form in the CP.'|t('simple-forms')
+}) }}
+{% if not currentUser.admin %}
+    <div class="hidden">
+{% endif %}
+    {{ forms.textField({
+        label: 'Handle'|t('simple-forms'),
+        id: 'handle',
+        name: 'handle',
+        value: form.handle,
+        errors: form.getErrors('handle'),
+        required: true,
+        instructions: 'Name of this form in the templates.'|t('simple-forms')
+    }) }}
+{% if not currentUser.admin %}
+    </div>
+{% endif %}
+<hr>
+{{ forms.lightswitchField({
+    label: 'Display tab titles'|t('simple-forms'),
+    id: 'displayTabTitles',
+    name: 'displayTabTitles',
+    on: form.displayTabTitles,
+    onLabel: 'Enable'|t('simple-forms'),
+    offLabel: 'Disable'|t('simple-forms'),
+    errors: form.getErrors('displayTabTitles'),
+    instructions: 'Whether to display the title of the tabs, above the fields.'|t('simple-forms')
+}) }}
+{{ forms.textField({
+    label: 'Custom submit button text'|t('simple-forms'),
+    id: 'submitButton',
+    name: 'submitButton',
+    value: form.submitButton,
+    errors: form.getErrors('submitButton'),
+    instructions: 'What the text in the submit button should be.'|t('simple-forms'),
+    placeholder: 'Submit'|t('simple-forms')
+}) }}
+<hr>
+{{ forms.selectField({
+    label: 'After submission'|t('simple-forms'),
+    id: 'afterSubmit',
+    name: 'afterSubmit',
+    options: afterSubmissionOptions,
+    value: form.afterSubmit,
+    errors: form.getErrors('afterSubmit'),
+    instructions: 'What should happen upon form submission?'|t('simple-forms'),
+    toggle: true,
+    targetPrefix: 'submitType_'
+}) }}
+<div id="submitType_afterSubmitText"{% if activeAfterSubmit != 'afterSubmitText' %} class="hidden"{% endif %}>
+    {{ forms.textareaField({
+        label: 'Text after submit'|t('simple-forms'),
+        id: 'afterSubmitText',
+        name: 'afterSubmitText',
+        value: form.afterSubmitText,
+        errors: form.getErrors('afterSubmitText'),
+        instructions: 'What the text after a submit should be.'|t('simple-forms'),
+        placeholder: 'Thanks for your submission.'|t('simple-forms')
+    }) }}
+</div>
+<div id="submitType_redirectEntryId"{% if activeAfterSubmit != 'redirectEntryId' %} class="hidden"{% endif %}>
+    {{ forms.elementSelectField({
+        label: 'Redirect page'|t('simple-forms'),
+        id: 'redirectEntryId',
+        name: 'redirectEntryId',
+        elementType: entryElementType,
+        elements: [form.getRedirectEntry()],
+        limit: 1,
+        addButtonLabel: 'Select a page'|t('simple-forms'),
+        errors: form.getErrors('redirectEntryId'),
+        instructions: 'Where to redirect to upon form submission.'|t('simple-forms')
+    }) }}
+</div>
+<div id="submitType_redirectUrl"{% if activeAfterSubmit != 'redirectUrl' %} class="hidden"{% endif %}>
+    {{ forms.textField({
+        label: 'Redirect URL'|t('simple-forms'),
+        id: 'redirectUrl',
+        name: 'redirectUrl',
+        value: form.redirectUrl,
+        errors: form.getErrors('redirectUrl'),
+        instructions: 'Where to redirect to upon form submission.'|t('simple-forms'),
+        placeholder: 'http://www.domain.com/return-here'
+    }) }}
+</div>
+<div id="submitType_submitAction"{% if activeAfterSubmit != 'submitAction' %} class="hidden"{% endif %}>
+    {{ forms.textField({
+        label: 'Submit action URL'|t('simple-forms'),
+        id: 'submitAction',
+        name: 'submitAction',
+        value: form.submitAction,
+        errors: form.getErrors('submitAction'),
+        instructions: 'Use this if you want to submit the form to a different URL.'|t('simple-forms'),
+        placeholder: 'http://www.domain.com/submit-here'
+    }) }}
+</div>
+<hr>
+{{ forms.lightswitchField({
+    label: 'Save submissions'|t('simple-forms'),
+    id: 'submissionEnabled',
+    name: 'submissionEnabled',
+    on: form.submissionEnabled,
+    onLabel: 'Enable'|t('simple-forms'),
+    offLabel: 'Disable'|t('simple-forms'),
+    errors: form.getErrors('submissionEnabled'),
+    instructions: 'Whether to store form submissions.'|t('simple-forms')
+}) }}
+{% if not currentUser.admin %}
+    <div class="hidden">
+{% endif %}
+    {{ forms.textField({
+        label: 'Title format'|t('simple-forms'),
+        id: 'titleFormat',
+        name: 'titleFormat',
+        class: 'amforms__selector--on',
+        value: form.titleFormat,
+        errors: form.getErrors('titleFormat'),
+        required: true,
+        instructions: 'Submission titles are auto-generated based on the title format you enter here.'|t('simple-forms')
+    }) }}
+{% if not currentUser.admin %}
+    </div>
+{% endif %}
+
+{% js %}
+    {% if not form.handle %}new Craft.HandleGenerator('#name', '#handle');{% endif %}
+{% endjs %}

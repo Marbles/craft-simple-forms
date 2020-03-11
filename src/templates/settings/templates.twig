@@ -1,0 +1,72 @@
+{% extends 'simple-forms/_layouts/settings' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = 'Templates'|t('simple-forms') %}
+
+{% macro configWarning(setting) -%}
+    {% set setting = '<code>'~setting~'</code>' %}
+    {{ "This is being overridden by the {setting} config setting in your {file} config file."|t('simple-forms', {
+        setting: setting,
+        file: 'simple-forms.php'
+    })|raw }}
+{%- endmacro %}
+
+{% from _self import configWarning %}
+
+{% block fields %}
+    {{ forms.textField({
+        label: 'Form template'|t('simple-forms'),
+        id: 'formTemplate',
+        name: 'settings[formTemplate]',
+        value: settings.formTemplate,
+        placeholder: '_simple-forms/form',
+        disabled:     'formTemplate' in overrides,
+        warning:      'formTemplate' in overrides ? configWarning('formTemplate'),
+        instructions: 'Override default template with your own template. Enter the folder (with template), e.g.: {template}'|t('simple-forms', {'template': '_simple-forms'}),
+        first: true
+    }) }}
+
+    {{ forms.textField({
+        label: 'Tab template'|t('simple-forms'),
+        id: 'tabTemplate',
+        name: 'settings[tabTemplate]',
+        value: settings.tabTemplate,
+        placeholder: '_simple-forms/tab',
+        disabled:     'tabTemplate' in overrides,
+        warning:      'tabTemplate' in overrides ? configWarning('tabTemplate'),
+        instructions: 'Override default template with your own template. Enter the folder (with template), e.g.: {template}'|t('simple-forms', {'template': '_simple-forms'})
+    }) }}
+
+    {{ forms.textField({
+        label: 'Field template'|t('simple-forms'),
+        id: 'fieldTemplate',
+        name: 'settings[fieldTemplate]',
+        value: settings.fieldTemplate,
+        placeholder: '_simple-forms/field',
+        disabled:     'fieldTemplate' in overrides,
+        warning:      'fieldTemplate' in overrides ? configWarning('fieldTemplate'),
+        instructions: 'Override default template with your own template. Enter the folder (with template), e.g.: {template}'|t('simple-forms', {'template': '_simple-forms'})
+    }) }}
+
+    {{ forms.textField({
+        label: 'Notification template'|t('simple-forms'),
+        id: 'notificationTemplate',
+        name: 'settings[notificationTemplate]',
+        value: settings.notificationTemplate,
+        placeholder: '_simple-forms/notification',
+        disabled:     'notificationTemplate' in overrides,
+        warning:      'notificationTemplate' in overrides ? configWarning('notificationTemplate'),
+        instructions: 'Override default template with your own template. Enter the folder (with template), e.g.: {template}'|t('simple-forms', {'template': '_simple-forms'})
+    }) }}
+
+    {{ forms.textField({
+        label: 'Confirmation template'|t('simple-forms'),
+        id: 'confirmationTemplate',
+        name: 'settings[confirmationTemplate]',
+        value: settings.confirmationTemplate,
+        placeholder: '_simple-forms/confirmation',
+        disabled:     'confirmationTemplate' in overrides,
+        warning:      'confirmationTemplate' in overrides ? configWarning('confirmationTemplate'),
+        instructions: 'Override default template with your own template. Enter the folder (with template), e.g.: {template}'|t('simple-forms', {'template': '_simple-forms'})
+    }) }}
+{% endblock %}

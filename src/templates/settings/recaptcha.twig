@@ -1,0 +1,45 @@
+{% extends 'simple-forms/_layouts/settings' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = 'reCAPTCHA'|t('simple-forms') %}
+
+{% macro configWarning(setting) -%}
+    {% set setting = '<code>'~setting~'</code>' %}
+    {{ "This is being overridden by the {setting} config setting in your {file} config file."|t('simple-forms', {
+        setting: setting,
+        file: 'simple-forms.php'
+    })|raw }}
+{%- endmacro %}
+
+{% from _self import configWarning %}
+
+{% block fields %}
+    {{ forms.lightswitchField({
+        label: 'Google ReCAPTCHA enabled'|t('simple-forms'),
+        id: 'googleRecaptchaEnabled',
+        name: 'settings[googleRecaptchaEnabled]',
+        on: settings.googleRecaptchaEnabled,
+        instructions: 'Use Google reCAPTCHA in forms.'|t('simple-forms'),
+        disabled:     'googleRecaptchaEnabled' in overrides,
+        warning:      'googleRecaptchaEnabled' in overrides ? configWarning('googleRecaptchaEnabled'),
+        first: true
+    }) }}
+    {{ forms.textField({
+        label: 'Site key'|t('simple-forms'),
+        id: 'googleRecaptchaSiteKey',
+        name: 'settings[googleRecaptchaSiteKey]',
+        value: settings.googleRecaptchaSiteKey,
+        disabled:     'googleRecaptchaSiteKey' in overrides,
+        warning:      'googleRecaptchaSiteKey' in overrides ? configWarning('googleRecaptchaSiteKey'),
+        instructions: 'Go to Google reCAPTCHA and register the site. Use the site key that is given.'|t('simple-forms')
+    }) }}
+    {{ forms.textField({
+        label: 'Secret key'|t('simple-forms'),
+        id: 'googleRecaptchaSecretKey',
+        name: 'settings[googleRecaptchaSecretKey]',
+        value: settings.googleRecaptchaSecretKey,
+        disabled:     'googleRecaptchaSecretKey' in overrides,
+        warning:      'googleRecaptchaSecretKey' in overrides ? configWarning('googleRecaptchaSecretKey'),
+        instructions: 'Go to Google reCAPTCHA and register the site. Use the secret key that is given.'|t('simple-forms')
+    }) }}
+{% endblock %}

@@ -1,0 +1,29 @@
+{% import '_includes/forms' as forms %}
+
+{{ forms.selectField({
+    label: 'Form'|t('simple-forms'),
+    instructions: 'Which form do you want to see submissions from?'|t('simple-forms'),
+    id: 'form',
+    name: 'form',
+    options: availableForms,
+    value: settings.form,
+    errors: settings.getErrors('form')
+}) }}
+
+{{ forms.textField({
+    label: 'Limit'|t('simple-forms'),
+    id: 'limit',
+    name: 'limit',
+    value: settings.limit,
+    size: 2,
+    errors: settings.getErrors('limit')
+}) }}
+
+{{ forms.selectField({
+    label: 'Date'|t('simple-forms'),
+    id: 'showDate',
+    name: 'showDate',
+    options: { '': 'Don’t show'|t('simple-forms'), 'date': 'Show date'|t('simple-forms'), 'dateTime': 'Show date and time'|t('simple-forms') },
+    value: settings.showDate,
+    errors: settings.getErrors('showDate')
+}) }}

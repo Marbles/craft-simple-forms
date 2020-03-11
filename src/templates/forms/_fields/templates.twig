@@ -1,0 +1,47 @@
+{% import '_includes/forms' as forms %}
+
+{{ forms.textField({
+    label: 'Form template'|t('simple-forms'),
+    id: 'formTemplate',
+    name: 'formTemplate',
+    value: form.formTemplate,
+    errors: form.getErrors('formTemplate'),
+    placeholder: '_simple-forms/form',
+    instructions: 'Override default template with your own template. Enter the folder (with template), e.g.: {template}'|t('simple-forms', {'template': '_simple-forms'})
+}) }}
+{{ forms.textField({
+    label: 'Tab template'|t('simple-forms'),
+    id: 'tabTemplate',
+    name: 'tabTemplate',
+    value: form.tabTemplate,
+    errors: form.getErrors('tabTemplate'),
+    placeholder: '_simple-forms/tab',
+    instructions: 'Override default template with your own template. Enter the folder (with template), e.g.: {template}'|t('simple-forms', {'template': '_simple-forms'})
+}) }}
+{{ forms.textField({
+    label: 'Field template'|t('simple-forms'),
+    id: 'fieldTemplate',
+    name: 'fieldTemplate',
+    value: form.fieldTemplate,
+    errors: form.getErrors('fieldTemplate'),
+    placeholder: '_simple-forms/field',
+    instructions: 'Override default template with your own template. Enter the folder (with template), e.g.: {template}'|t('simple-forms', {'template': '_simple-forms'})
+}) }}
+{{ forms.textField({
+    label: 'Notification template'|t('simple-forms'),
+    id: 'notificationTemplate',
+    name: 'notificationTemplate',
+    value: form.notificationTemplate,
+    errors: form.getErrors('notificationTemplate'),
+    placeholder: '_simple-forms/notification',
+    instructions: 'Override default template with your own template. Enter the folder (with template), e.g.: {template}'|t('simple-forms', {'template': '_simple-forms'})
+}) }}
+{{ forms.textField({
+    label: 'Confirmation template'|t('simple-forms'),
+    id: 'confirmationTemplate',
+    name: 'confirmationTemplate',
+    value: form.confirmationTemplate,
+    errors: form.getErrors('confirmationTemplate'),
+    placeholder: '_simple-forms/confirmation',
+    instructions: 'Override default template with your own template. Enter the folder (with template), e.g.: {template}'|t('simple-forms', {'template': '_simple-forms'})
+}) }}

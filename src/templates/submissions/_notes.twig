@@ -1,0 +1,93 @@
+{% extends 'simple-forms/_layouts/cp' %}
+
+{% set fullPageForm = true %}
+
+{% import '_includes/forms' as forms %}
+
+{% set title = 'Notes'|t('simple-forms') %}
+
+{% set crumbs = [
+    { label: craft.simpleForms.name, url: url('simple-forms') },
+    { label: 'Submissions'|t('simple-forms'), url: url('simple-forms/submissions') },
+    { label: submission.title,  url: submission.getCpEditUrl() }
+] %}
+
+{% set tabs = {
+    submission: {
+        label: 'Submission'|t('simple-forms'),
+        url: submission.getCpEditUrl()
+    },
+    notes: {
+        label: 'Notes'|t('simple-forms'),
+        url: '#'
+    }
+} %}
+{% set selectedTab = 'notes' %}
+
+{% block content %}
+    <p id="nonotes"{% if notes|length %} class="hidden"{% endif %}>
+        {{ "No notes exist yet."|t('simple-forms') }}
+    </p>
+
+    {% if notes|length %}
+        <table id="submissionNotes" class="data fullwidth collapsible">
+            <thead>
+            <th scope="col">{{ 'Name'|t('simple-forms') }}</th>
+            <th scope="col">{{ 'Note'|t('simple-forms') }}</th>
+            <th scope="col">{{ 'Date'|t('simple-forms') }}</th>
+            <td class="thin"></td>
+            </thead>
+            <tbody>
+            {% for displayNote in notes -%}
+                <tr data-id="{{ displayNote.id }}" data-name="{{ 'Note of {date}'|t('simple-forms', { date: displayNote.dateCreated|date('d-m-Y') }) }}">
+                    <th scope="row" data-title="{{ 'Name'|t('simple-forms') }}">{{ displayNote.name }}</th>
+                    <td data-title="{{ 'Note'|t('simple-forms') }}" width="65%">{{ displayNote.text|nl2br }}</td>
+                    <td data-title="{{ 'Date'|t('simple-forms') }}">{{ displayNote.dateCreated|date('d-m-Y') }}</td>
+                    <td class="thin">
+                        <a class="delete icon" title="{{ 'Delete'|t('simple-forms') }}" role="button"></a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}
+
+{% block details %}
+    <div class="" style="padding: 16px 24px;">
+        <h1>{{ 'Add a note'|t('simple-forms') }}</h1>
+
+        <input type="hidden" name="action" value="simple-forms/notes/save-note">
+        <input type="hidden" name="submissionId" value="{{ submission.id }}">
+        {{ redirectInput('simple-forms/submissions/edit/'~submissionId~'/notes') }}
+
+        {{ forms.textField({
+            label: 'Name'|t('simple-forms'),
+            id: 'name',
+            name: 'name',
+            value: (note.name|length ? note.name : currentUser.firstName),
+            errors: note.getErrors('name'),
+            first: true,
+            required: true,
+            instructions: 'Name of the contact person.'|t('simple-forms')
+        }) }}
+        {{ forms.textareaField({
+            label: 'Note'|t('simple-forms'),
+            id: 'text',
+            name: 'text',
+            value: note.text,
+            errors: note.getErrors('text'),
+            rows: 10,
+            required: true
+        }) }}
+    </div>
+{% endblock %}
+
+{% set js %}
+    new Craft.AdminTable({
+        tableSelector: '#submissionNotes',
+        noObjectsSelector: '#nonotes',
+        deleteAction: 'simple-forms/notes/delete-note'
+    });
+{% endset %}
+{% js js %}

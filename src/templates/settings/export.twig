@@ -1,0 +1,54 @@
+{% extends 'simple-forms/_layouts/settings' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = 'Exports'|t('simple-forms') %}
+
+{% macro configWarning(setting) -%}
+    {% set setting = '<code>'~setting~'</code>' %}
+    {{ "This is being overridden by the {setting} config setting in your {file} config file."|t('simple-forms', {
+        setting: setting,
+        file: 'simple-forms.php'
+    })|raw }}
+{%- endmacro %}
+
+{% from _self import configWarning %}
+
+{% block fields %}
+    {{ forms.textField({
+        label: 'Delimiter'|t('simple-forms'),
+        id: 'delimiter',
+        name: 'settings[delimiter]',
+        value: settings.delimiter,
+        instructions: 'Which character should be used as delimiter?'|t('simple-forms'),
+        disabled:     'delimiter' in overrides,
+        warning:      'delimiter' in overrides ? configWarning('delimiter'),
+        first: true
+    }) }}
+    {{ forms.textField({
+        label: 'Export rows per set'|t('simple-forms'),
+        id: 'exportRowsPerSet',
+        name: 'settings[exportRowsPerSet]',
+        value: settings.exportRowsPerSet,
+        disabled:     'exportRowsPerSet' in overrides,
+        warning:      'exportRowsPerSet' in overrides ? configWarning('exportRowsPerSet'),
+        instructions: 'The amount of rows per set when running the export task.'|t('simple-forms')
+    }) }}
+    {{ forms.lightswitchField({
+        label: 'Ignore Matrix field and block names'|t('simple-forms'),
+        id: 'ignoreMatrixFieldAndBlockNames',
+        name: 'settings[ignoreMatrixFieldAndBlockNames]',
+        on: settings.ignoreMatrixFieldAndBlockNames,
+        disabled:     'ignoreMatrixFieldAndBlockNames' in overrides,
+        warning:      'ignoreMatrixFieldAndBlockNames' in overrides ? configWarning('ignoreMatrixFieldAndBlockNames'),
+        instructions: 'Don’t include the field and block names in the column name.'|t('simple-forms')
+    }) }}
+    {{ forms.lightswitchField({
+        label: 'Ignore matrix multiple rows'|t('simple-forms'),
+        id: 'ignoreMatrixMultipleRows',
+        name: 'settings[ignoreMatrixMultipleRows]',
+        on: settings.ignoreMatrixMultipleRows,
+        disabled:     'ignoreMatrixMultipleRows' in overrides,
+        warning:      'ignoreMatrixMultipleRows' in overrides ? configWarning('ignoreMatrixMultipleRows'),
+        instructions: 'Don’t place multiple block types on multiple rows. You need to be sure that block types will not be used more than once.'|t('simple-forms')
+    }) }}
+{% endblock %}

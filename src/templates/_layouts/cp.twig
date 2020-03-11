@@ -1,0 +1,9 @@
+{% extends (elementType is defined ? '_layouts/elementindex' : '_layouts/cp') %}
+
+{% if title is not defined %}
+    {% set title = craft.simpleForms.name %}
+{% endif %}
+
+{% if selectedSubnavItem is not defined %}
+    {% set selectedSubnavItem = craft.app.request.getSegment(2) %}
+{% endif %}

@@ -1,0 +1,91 @@
+{% extends '_email' %}
+
+{% block content %}
+    <h1 style="box-sizing: border-box; color: #2F3133; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 19px; font-weight: bold; margin-top: 0;" align="left">{{ 'Hi'|t('simple-forms') }}</h1>
+    <p style="box-sizing: border-box; color: #74787E; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 16px; line-height: 1.5em; margin-top: 0;" align="left">{{ 'Form {form} was submitted on {date}.'|t('simple-forms', {
+            form: '<strong>' ~ form.name ~ '</strong>',
+            date: '<strong>' ~  ('now'|date('d-m-Y  H:i:s')) ~ '</strong>'
+        })|raw }}</p>
+    <p style="box-sizing: border-box; color: #74787E; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 16px; line-height: 1.5em; margin-top: 0;" align="left">{{ 'The form was submitted from: '|t('simple-forms') }}<br><a
+                href="{{ submission.submittedFrom }}">{{ submission.submittedFrom }}</a></p>
+
+    <table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" style="box-sizing: border-box; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; margin: 30px auto; padding: 0; text-align: center; width: 100%;">
+        <tr>
+            <td align="center" style="box-sizing: border-box; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; word-break: break-word;">
+
+                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="box-sizing: border-box; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">
+                    <tr>
+                        <td align="center" style="box-sizing: border-box; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; word-break: break-word;">
+                            <table border="0" cellspacing="0" cellpadding="0" style="box-sizing: border-box; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">
+                                <tr>
+                                    <td style="box-sizing: border-box; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; word-break: break-word;">
+                                        <a href="{{ submission.getCpEditUrl() }}" class="button button--" target="_blank" style="-webkit-text-size-adjust: none; background: #3869D4; border-color: #3869d4; border-radius: 3px; border-style: solid; border-width: 10px 18px; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.16); box-sizing: border-box; color: #FFF; display: inline-block; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; text-decoration: none;">{{ 'View in CP'|t('simple-forms') }}</a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <p style="box-sizing: border-box; color: #74787E; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 16px; line-height: 1.5em; margin-top: 0;" align="left">{{ 'The following data was submitted:'|t('simple-forms') }}</p>
+    <table class="attributes" width="100%" cellpadding="0" cellspacing="0" style="box-sizing: border-box; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; margin: 0 0 21px;">
+        <tr>
+            <td class="attributes_content" style="box-sizing: border-box; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; padding: 16px; word-break: break-word;" bgcolor="#EDEFF2">
+                <table width="100%" cellpadding="0" cellspacing="0" style="box-sizing: border-box; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">
+                    {% for tab in tabs -%}
+                        {% set fields = tab.getFields() -%}
+                        {% for field in fields -%}
+                            {%- set value = attribute(submission, field.handle) -%}
+                            {% switch className(field) %}
+                            {% case "craft\\fields\\Date" %}
+                                {% if value|length %}
+                                    {% if field.settings['showDate'] is defined and field.settings.showDate %}
+                                        {% set displayValue = value|date('d-m-Y') %}
+                                    {% endif %}
+                                    {% if field.settings['showTime'] is defined and field.settings.showTime %}
+                                        {% set displayValue = value|date('d-m-Y H:i') %}
+                                    {% endif %}
+                                {% endif %}
+
+                            {% case "craft\\fields\\Lightswitch" %}
+                                {% if value == '1' %}
+                                    {% set displayValue = 'Yes'|t('simple-forms') %}
+                                {% else %}
+                                    {% set displayValue = 'No'|t('simple-forms') %}
+                                {% endif %}
+
+                            {% case "craft\\fields\\Assets" %}
+                                {% set files = value.all() %}
+                                {% set displayValue = '<ul style="margin-left: 0">' %}
+                                {% for file in files %}
+                                    {% set displayValue = displayValue ~ '<li><a href="' ~ file.url ~ '">' ~ file.filename ~ '</a></li>' %}
+                                {% endfor %}
+                                {% set displayValue = displayValue ~ '</ul>' %}
+
+                            {% default %}
+                                {% if value is not iterable and value is not empty -%}
+                                    {% set displayValue = value %}
+                                {% else -%}
+                                    {% set displayValue = '<ul style="margin-left: 0">' %}
+                                    {% for item in value %}
+                                        {% set displayValue = displayValue ~ '<li>' ~ (item is iterable ? item|first : item) ~ '</li>' %}
+                                    {% endfor %}
+                                    {% set displayValue = displayValue ~ '</ul>' %}
+                                {% endif %}
+                            {% endswitch %}
+
+                            <tr>
+                                <td class="attributes_item" style="box-sizing: border-box; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; padding: 0; padding-bottom: 15px; word-break: break-word;"><strong style="box-sizing: border-box; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">{{ field.name|t('simple-forms') }}:</strong><br>{{ displayValue|raw }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </table>
+            </td>
+        </tr>
+    </table>
+    <p style="box-sizing: border-box; color: #74787E; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 16px; line-height: 1.5em; margin-top: 0;" align="left">{{ 'Kind regards'|t('simple-forms') }},
+        <br />{{ currentSite.name }}</p>
+{% endblock %}

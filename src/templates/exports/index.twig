@@ -1,0 +1,77 @@
+{% extends 'simple-forms/_layouts/cp' %}
+
+{% set title = 'Exports'|t('simple-forms') %}
+
+{% block actionButton %}
+    <a class="btn submit add icon" href="{{ url('simple-forms/exports/new') }}">{{ 'New export'|t('simple-forms') }}</a>
+{% endblock %}
+
+{% block content %}
+    <p id="noexports"{% if exports %} class="hidden"{% endif %}>
+        {{ "No exports exist yet."|t('simple-forms') }}
+    </p>
+
+    {% if exports %}
+        <table id="formExports" class="data fullwidth collapsible">
+            <thead>
+                <th scope="col">{{ 'Form'|t('simple-forms') }}</th>
+                <th scope="col">{{ 'Name'|t('simple-forms') }}</th>
+                <th scope="col">{{ 'Total submissions'|t('simple-forms') }}</th>
+                <th scope="col">{{ 'Total submissions that met the criteria'|t('simple-forms') }}</th>
+                <th scope="col">{{ 'Status'|t('simple-forms') }}</th>
+                <th scope="col">{{ 'Date updated'|t('simple-forms') }}</th>
+                <td class="thin"></td>
+            </thead>
+            <tbody>
+                {% for export in exports %}
+                    {% set form = craft.simpleForms.getFormById(export.formId) %}
+
+                    <tr data-id="{{ export.id }}" data-name="{{ '{form} export'|t('simple-forms', {'form': form.name}) }}">
+                        <th scope="row" data-title="{{ 'Form'|t('simple-forms') }}">
+                            {% if export.submissions %}
+                                {{ form.name|t('simple-forms') }}
+                            {% else %}
+                                <a href="{{ url('simple-forms/exports/edit/' ~ export.id) }}">{{ form.name|t('simple-forms') }}</a>
+                            {% endif %}
+                        </th>
+                        <td data-title="{{ 'Name'|t('simple-forms') }}">{{ export.name }}</td>
+                        <td data-title="{{ 'Total submissions'|t('simple-forms') }}">{{ export.total }}</td>
+                        <td data-title="{{ 'Total submissions that met the criteria'|t('simple-forms') }}">
+                            {% if export.totalCriteria is not null %}
+                                {{ export.totalCriteria }}
+                            {% else %}
+                                <a href="{{ actionUrl('simple-forms/exports/get-total-by-criteria', { id: export.id }) }}">{{ 'Calculate'|t('simple-forms') }}</a>
+                            {% endif %}
+                        </td>
+                        <td data-title="{{ 'Status'|t('simple-forms') }}">
+                            {% if export.finished %}
+                                <a href="{{ actionUrl('simple-forms/exports/download-export', { id: export.id }) }}">{{ 'Download'|t('simple-forms') }}</a>
+                                <a class="menubtn" title="{{ 'Options'|t('simple-forms') }}"></a>
+                                <div class="menu">
+                                    <ul>
+                                        <li><a href="{{ actionUrl('simple-forms/exports/restart-export', { id: export.id }) }}">{{ 'Restart'|t('simple-forms') }}</a></li>
+                                    </ul>
+                                </div>
+                            {% else %}
+                                {{ 'Busy'|t('simple-forms') }}
+                            {% endif %}
+                        </td>
+                        <td data-title="{{ 'Date updated'|t('simple-forms') }}">{{ export.dateUpdated | date }}</td>
+                        <td class="thin">
+                            <a class="delete icon" title="{{ 'Delete'|t('simple-forms') }}" role="button"></a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}
+
+{% set js %}
+    new Craft.AdminTable({
+        tableSelector: '#formExports',
+        noObjectsSelector: '#noexports',
+        deleteAction: 'simple-forms/exports/delete-export'
+    });
+{% endset %}
+{% js js %}

@@ -1,0 +1,58 @@
+{% extends 'simple-forms/_layouts/settings' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = 'General'|t('simple-forms') %}
+
+{% macro configWarning(setting) -%}
+    {% set setting = '<code>'~setting~'</code>' %}
+    {{ "This is being overridden by the {setting} config setting in your {file} config file."|t('simple-forms', {
+        setting: setting,
+        file: 'simple-forms.php'
+    })|raw }}
+{%- endmacro %}
+
+{% from _self import configWarning %}
+
+{% block fields %}
+    {{ forms.textField({
+        label: 'Plugin name'|t('simple-forms'),
+        instructions: 'Plugin name for the end user.'|t('simple-forms'),
+        id: 'pluginName',
+        name: 'settings[pluginName]',
+        disabled:     'pluginName' in overrides,
+        warning:      'pluginName' in overrides ? configWarning('pluginName'),
+        value: settings.pluginName,
+        first: true,
+    }) }}
+
+    {{ forms.lightswitchField({
+        label: 'Quiet errors'|t('simple-forms'),
+        instructions: 'Whether to silently log an error or throw an exception if a form does not exist. By default, it will throw an exception.'|t('simple-forms'),
+        id: 'quietErrors',
+        name: 'settings[quietErrors]',
+        disabled:     'quietErrors' in overrides,
+        warning:      'quietErrors' in overrides ? configWarning('quietErrors'),
+        on: settings.quietErrors == true,
+    }) }}
+
+    {{ forms.textField({
+        label: 'Fields per set'|t('simple-forms'),
+        instructions: 'The amount of fields per set in the form layout designer.'|t('simple-forms'),
+        id: 'fieldsPerSet',
+        name: 'settings[fieldsPerSet]',
+        type: 'number',
+        disabled:     'fieldsPerSet' in overrides,
+        warning:      'fieldsPerSet' in overrides ? configWarning('fieldsPerSet'),
+        value: settings.fieldsPerSet,
+    }) }}
+
+    {{ forms.textField({
+        label: 'BCC email address'|t('simple-forms'),
+        instructions: 'Who will receive a copy of each notification? Enter comma separated email addresses for more recipients.'|t('simple-forms'),
+        id: 'bccEmailAddress',
+        name: 'settings[bccEmailAddress]',
+        disabled:     'bccEmailAddress' in overrides,
+        warning:      'bccEmailAddress' in overrides ? configWarning('bccEmailAddress'),
+        value: settings.bccEmailAddress,
+    }) }}
+{% endblock %}

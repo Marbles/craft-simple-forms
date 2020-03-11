@@ -1,0 +1,58 @@
+{
+    "name": "rias/craft-simple-forms",
+    "description": "Forms, made simple",
+    "type": "craft-plugin",
+    "keywords": [
+        "craft",
+        "cms",
+        "craftcms",
+        "craft-plugin",
+        "forms"
+    ],
+    "support": {
+        "docs": "https://github.com/Rias500/craft-simple-forms/blob/master/README.md",
+        "issues": "https://github.com/Rias500/craft-simple-forms/issues"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Rias",
+            "homepage": "https://rias.be"
+        }
+    ],
+    "require": {
+        "craftcms/cms": "^3.0.0"
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://asset-packagist.org"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+          "rias\\simpleforms\\": "src/"
+        }
+    },
+    "extra": {
+        "name": "Simple Forms",
+        "handle": "simple-forms",
+        "schemaVersion": "0.1.0",
+        "hasCpSettings": true,
+        "hasCpSection": true,
+        "changelogUrl": "https://raw.githubusercontent.com/Rias500/craft-simple-forms/master/CHANGELOG.md",
+        "components": {
+            "simpleFormsService": "rias\\simpleforms\\services\\SimpleFormsService",
+            "antiSpamService": "rias\\simpleforms\\services\\AntiSpamService",
+            "exportsService": "rias\\simpleforms\\services\\ExportsService",
+            "fieldsService": "rias\\simpleforms\\services\\FieldsService",
+            "installService": "rias\\simpleforms\\services\\InstallService",
+            "notesService": "rias\\simpleforms\\services\\NotesService",
+            "recaptchaService": "rias\\simpleforms\\services\\RecaptchaService",
+            "settingsService": "rias\\simpleforms\\services\\SettingsService",
+            "submissionsService": "rias\\simpleforms\\services\\SubmissionsService",
+            "formsService": "rias\\simpleforms\\services\\FormsService"
+        },
+        "class": "rias\\simpleforms\\SimpleForms"
+    }
+}

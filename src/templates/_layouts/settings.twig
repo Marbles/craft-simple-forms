@@ -1,0 +1,41 @@
+{% extends 'simple-forms/_layouts/cp' %}
+
+{% set fullPageForm = true %}
+
+{% set crumbs = [
+    { label: craft.simpleForms.name, url: url('simple-forms') },
+    { label: 'Settings'|t('simple-forms'), url: url('simple-forms/settings') },
+    { label: title, url: '#' }
+] %}
+
+{% set navItems = {
+    'general': { title: "General"|t('simple-forms') },
+    'submissions': { title: "Submissions"|t('simple-forms') },
+    'export': { title: "Exports"|t('simple-forms') },
+    'antispam': { title: "AntiSpam"|t('simple-forms') },
+    'recaptcha': { title: "reCAPTCHA"|t('simple-forms') },
+    'templates': { title: "Templates"|t('simple-forms') }
+} %}
+{% set selectedItem = craft.app.request.getSegment(3) %}
+{% set title = navItems[selectedItem].title %}
+
+{% block sidebar %}
+    <nav>
+        <ul>
+            {% for id, item in navItems %}
+                {% if item.heading is defined %}
+                    <li class="heading"><span>{{ item.heading }}</span></li>
+                {% else %}
+                    <li><a href="{{ url('simple-forms/settings/' ~ id) }}"{% if id == selectedItem %} class="sel"{% endif %}>{{ item.title }}</a></li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <input type="hidden" name="settingsType" value="{{ type }}">
+    <input type="hidden" name="action" value="simple-forms/settings/save-settings">
+
+    {% block fields %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,15 @@
+
+<div class="{{ fieldName }}__wrapper">
+    <label>{{ 'Leave this field blank'|t('simple-forms') }}</label>
+    <input type="text" id="{{ fieldName }}" name="{{ fieldName }}" value="">
+</div>
+
+{% set js = "
+    (function() {
+        var $yoursinces = document.querySelectorAll('."~ fieldName ~ "__wrapper');
+        for (var i = 0; i < $yoursinces.length; i++) {
+            $yoursinces[i].style.display = 'none';
+        }
+    })();
+" %}
+{% do craft.app.view.registerJs(js, 3) %}

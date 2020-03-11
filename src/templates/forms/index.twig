@@ -1,0 +1,7 @@
+{% extends 'simple-forms/_layouts/cp' %}
+
+{% set title = 'Forms'|t('simple-forms') %}
+
+{% block actionButton %}
+    <a class="btn submit add icon" href="{{ url('simple-forms/forms/new') }}">{{ 'New form'|t('simple-forms') }}</a>
+{% endblock %}
