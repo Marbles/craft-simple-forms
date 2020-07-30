@@ -37,7 +37,7 @@
     "extra": {
         "name": "Simple Forms",
         "handle": "simple-forms",
-        "schemaVersion": "0.1.0",
+        "schemaVersion": "0.1.2",
         "hasCpSettings": true,
         "hasCpSection": true,
         "changelogUrl": "https://raw.githubusercontent.com/Rias500/craft-simple-forms/master/CHANGELOG.md",
