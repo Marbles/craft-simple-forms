@@ -1,4 +1,5 @@
 <?php
+
 namespace rias\simpleforms\records;
 
 use craft\db\ActiveRecord;

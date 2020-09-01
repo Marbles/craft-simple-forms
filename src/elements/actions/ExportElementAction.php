@@ -1,6 +1,8 @@
 <?php
+
 namespace rias\simpleforms\elements\actions;
 
+use Box\Spout\Common\Type;
 use Craft;
 use craft\base\ElementAction;
 use craft\elements\db\ElementQueryInterface;
@@ -9,7 +11,6 @@ use rias\simpleforms\records\ExportRecord;
 use rias\simpleforms\SimpleForms;
 
 /**
- *
  * @property null|string $confirmationMessage
  */
 class ExportElementAction extends ElementAction
@@ -20,7 +21,7 @@ class ExportElementAction extends ElementAction
     }
 
     /**
-     * @inheritDoc IElementAction::isDestructive()
+     * {@inheritdoc} IElementAction::isDestructive()
      *
      * @return bool
      */
@@ -31,19 +32,22 @@ class ExportElementAction extends ElementAction
 
     /**
      * @param ElementQueryInterface $submissions
-     * @return bool
+     *
      * @throws \Exception
+     *
+     * @return bool
      */
     public function performAction(ElementQueryInterface $submissions): bool
     {
         // Gather submissions based on form
         $formSubmissions = [];
-        /** @var Submission $submission */
         foreach ($submissions->all() as $submission) {
-            if (! isset($formSubmissions[$submission->formId])) {
-                $formSubmissions[$submission->formId] = [];
+            if ($submission instanceof Submission) {
+                if (!isset($formSubmissions[$submission->formId])) {
+                    $formSubmissions[$submission->formId] = [];
+                }
+                $formSubmissions[$submission->formId][] = $submission->id;
             }
-            $formSubmissions[$submission->formId][] = $submission->id;
         }
 
         // Export submission(s)
@@ -52,17 +56,19 @@ class ExportElementAction extends ElementAction
 
             $export = new ExportRecord();
             $export->setAttributes([
-                'name' => Craft::t('simple-forms', '{total} submission(s)', ['total' => $total]),
-                'formId' => $formId,
-                'total' => $total,
+                'name'          => Craft::t('simple-forms', '{total} submission(s)', ['total' => $total]),
+                'formId'        => $formId,
+                'total'         => $total,
                 'totalCriteria' => $total,
-                'submissions' => $submissionIds,
+                'submissions'   => $submissionIds,
+                'type'          => Type::CSV,
             ]);
-            SimpleForms::$plugin->exportsService->saveExport($export);
+            SimpleForms::$plugin->exports->saveExport($export);
         }
 
         // Success!
-        $this->setMessage(Craft::t('simple-forms', 'Submissions exported.'));
+        $this->setMessage(Craft::t('simple-forms', 'Submissions exported. You can view them in the "exports" tab of {name}', ['name' => SimpleForms::$plugin->getSettings()->pluginName]));
+
         return true;
     }
 }

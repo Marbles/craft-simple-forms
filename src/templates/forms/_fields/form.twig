@@ -50,6 +50,25 @@
 {% if not currentUser.admin %}
     </div>
 {% endif %}
+
+{% if formGroups is defined and formGroups|length %}
+    {% set groupOptions = [
+        { label: 'All Forms'|t('simple-forms') , value: '*' }
+    ] %}
+    {% for group in formGroups %}
+        {% set groupOptions = groupOptions|merge([{ label: group.name, value: group.id }]) %}
+    {% endfor %}
+
+    {{ forms.selectField({
+        first: true,
+        label: "Group <span class='info'>Which group should this form be displayed in?</span>"|t('simple-forms'),
+        id: 'groupId',
+        name: 'groupId',
+        options: groupOptions,
+        value: groupId ?? null
+    }) }}
+{% endif %}
+
 <hr>
 {{ forms.lightswitchField({
     label: 'Display tab titles'|t('simple-forms'),

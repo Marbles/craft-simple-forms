@@ -1,23 +1,25 @@
 <?php
+
 namespace rias\simpleforms\services;
 
 use Craft;
 use craft\base\Component;
 use craft\base\Field;
+use craft\db\Query;
 use craft\helpers\StringHelper;
 use Exception;
 use rias\simpleforms\elements\db\FormQuery;
 use rias\simpleforms\elements\Form;
-use rias\simpleforms\records\FormRecord;
 use rias\simpleforms\SimpleForms;
+use Twig_Markup;
 
 /**
- * simple-forms - Forms service
+ * simple-forms - Forms service.
  */
-class FormsService extends Component
+class Forms extends Component
 {
-    private $_fields = array();
-    private $_namespaces = array();
+    private $_fields = [];
+    private $_namespaces = [];
 
     /**
      * Returns a criteria model for AmForms_Form elements.
@@ -25,6 +27,7 @@ class FormsService extends Component
      * @param array $attributes
      *
      * @throws Exception
+     *
      * @return FormQuery
      */
     public function getQuery(array $attributes = [])
@@ -36,8 +39,10 @@ class FormsService extends Component
      * Get all forms.
      *
      * @param string $indexBy
-     * @return array|\craft\base\ElementInterface[]|null
+     *
      * @throws Exception
+     *
+     * @return array|\craft\base\ElementInterface[]|null
      */
     public function getAllForms($indexBy = 'id')
     {
@@ -49,12 +54,19 @@ class FormsService extends Component
      *
      * @param int $id
      *
-     * @return array|\craft\base\ElementInterface|null
      * @throws Exception
+     *
+     * @return Form
      */
-    public function getFormById($id)
+    public function getFormById($id): Form
     {
-        return $this->getQuery()->id($id)->one();
+        $form = $this->getQuery()->id($id)->one();
+
+        if (!$form || !$form instanceof Form) {
+            throw new Exception(Craft::t('simple-forms', 'No form exists with the ID “{id}”.', ['id' => $id]));
+        }
+
+        return $form;
     }
 
     /**
@@ -62,12 +74,19 @@ class FormsService extends Component
      *
      * @param string $handle
      *
-     * @return array|\craft\base\ElementInterface|null
      * @throws Exception
+     *
+     * @return Form
      */
     public function getFormByHandle($handle)
     {
-        return $this->getQuery()->handle($handle)->one();
+        $form = $this->getQuery()->handle($handle)->one();
+
+        if (!$form || !$form instanceof Form) {
+            throw new Exception(Craft::t('simple-forms', 'No form exists with the handle “{handle}”.', ['handle' => $handle]));
+        }
+
+        return $form;
     }
 
     /**
@@ -76,18 +95,19 @@ class FormsService extends Component
      * @param Form $form
      *
      * @throws Exception
-     * @return bool
      * @throws \Throwable
+     *
+     * @return bool
      */
     public function saveForm(Form $form)
     {
         // Is submissions or notifications enabled?
-        if (! $form->submissionEnabled && ! $form->notificationEnabled) {
+        if (!$form->submissionEnabled && !$form->notificationEnabled) {
             $form->addError('submissionEnabled', Craft::t('simple-forms', 'Submissions or notifications must be enabled, otherwise you will lose the submission.'));
             $form->addError('notificationEnabled', Craft::t('simple-forms', 'Notifications or submissions must be enabled, otherwise you will lose the submission.'));
         }
 
-        if (! $form->hasErrors()) {
+        if (!$form->hasErrors()) {
             // Save the element!
             if (Craft::$app->getElements()->saveElement($form)) {
                 return true;
@@ -98,60 +118,16 @@ class FormsService extends Component
     }
 
     /**
-     * Delete a form.
-     *
-     * @param AmForms_FormModel $form
-     *
-     * @throws Exception
-     * @return bool
-     */
-    public function deleteForm(AmForms_FormModel $form)
-    {
-        $transaction = craft()->db->getCurrentTransaction() === null ? craft()->db->beginTransaction() : null;
-
-        try {
-            // Delete export files
-            craft()->amForms_exports->deleteExportFilesForForm($form);
-
-            // Delete the field layout
-            craft()->fields->deleteLayoutById($form->fieldLayoutId);
-
-            // Delete submission elements
-            $submissionIds = craft()->db->createCommand()
-                ->select('id')
-                ->from('amforms_submissions')
-                ->where(array('formId' => $form->id))
-                ->queryColumn();
-            craft()->elements->deleteElementById($submissionIds);
-
-            // Delete the element and form
-            craft()->elements->deleteElementById($form->id);
-
-            if ($transaction !== null) {
-                $transaction->commit();
-            }
-
-            return true;
-        } catch (\Exception $e) {
-            if ($transaction !== null) {
-                $transaction->rollback();
-            }
-
-            throw $e;
-        }
-
-        return false;
-    }
-
-    /**
      * Get unique name and handle for a form.
      *
-     * @param AmForms_FormModel $form
+     * @param Form $form
+     *
+     * @throws Exception
      */
-    public function getUniqueNameAndHandle(AmForms_FormModel $form)
+    public function getUniqueNameAndHandle(Form $form)
     {
-        $slugWordSeparator = craft()->config->get('slugWordSeparator');
-        $maxSlugIncrement = craft()->config->get('maxSlugIncrement');
+        $slugWordSeparator = Craft::$app->getConfig()->getGeneral()->slugWordSeparator;
+        $maxSlugIncrement = Craft::$app->getConfig()->getGeneral()->maxSlugIncrement;
 
         for ($i = 0; $i < $maxSlugIncrement; $i++) {
             $testName = $form->name;
@@ -165,25 +141,24 @@ class FormsService extends Component
             $form->name = $testName;
             $form->handle = StringHelper::toCamelCase($form->name);
 
-            $totalForms = craft()->db->createCommand()
+            $totalForms = (int) (new Query())
                 ->select('count(id)')
                 ->from('amforms_forms')
-                ->where('name=:name AND handle=:handle', array(
-                    ':name' => $form->name,
+                ->where('name=:name AND handle=:handle', [
+                    ':name'   => $form->name,
                     ':handle' => $form->handle,
-                ))
-                ->queryScalar();
+                ])
+                ->scalar() ?? 0;
 
-            if ($totalForms ==  0) {
+            if ($totalForms === 0) {
                 return;
-            }
-            else {
+            } else {
                 $form->name = $originalName;
                 $form->handle = $originalHandle;
             }
         }
 
-        throw new Exception(Craft::t('Could not find a unique name and handle for this form.'));
+        throw new Exception(Craft::t('simple-forms', 'Could not find a unique name and handle for this form.'));
     }
 
     /**
@@ -192,31 +167,32 @@ class FormsService extends Component
      * @param Form $form
      * @param bool $createNewOnEmpty
      *
-     * @return false|string
+     * @return string
      */
     public function getNamespaceForForm(Form $form, $createNewOnEmpty = true)
     {
-        if (! isset($this->_namespaces[ $form->id ]) && $createNewOnEmpty) {
-            $this->_namespaces[ $form->id ] = 'form_'.StringHelper::randomString(10);
+        if (!isset($this->_namespaces[$form->id]) && $createNewOnEmpty) {
+            $this->_namespaces[$form->id] = 'form_'.StringHelper::randomString(10);
         }
 
-        return isset($this->_namespaces[ $form->id ]) ? $this->_namespaces[ $form->id ] : false;
+        return isset($this->_namespaces[$form->id]) ? $this->_namespaces[$form->id] : '';
     }
 
     /**
      * Display a field.
      *
-     * @param Form $form
+     * @param Form   $form
      * @param string $handle
      *
-     * @return string
      * @throws \Twig_Error_Loader
      * @throws \yii\base\Exception
+     *
+     * @return string
      */
     public function displayField(Form $form, $handle)
     {
         // Get submission model
-        $submission = SimpleForms::$plugin->submissionsService->getActiveSubmission($form);
+        $submission = SimpleForms::$plugin->submissions->getActiveSubmission($form);
 
         // Set namespace, if one was set
         $namespace = $this->getNamespaceForForm($form, false);
@@ -225,16 +201,16 @@ class FormsService extends Component
         }
 
         // Get template path
-        $fieldTemplateInfo = SimpleForms::$plugin->simpleFormsService->getDisplayTemplateInfo('field', $form->fieldTemplate);
+        $fieldTemplateInfo = SimpleForms::$plugin->simpleForms->getDisplayTemplateInfo('field', $form->fieldTemplate);
 
         // Get the current templates path so we can restore it at the end of this function
         $siteTemplatesPath = Craft::$app->getView()->getTemplatesPath();
-        $pluginTemplatePath = SimpleForms::$plugin->getBasePath() . '/templates/_display/templates/';
+        $pluginTemplatePath = SimpleForms::$plugin->getBasePath().'/templates/_display/templates/';
 
         // Do we have the current form fields?
-        if (! isset($this->_fields[$form->id])) {
-            $this->_fields[$form->id] = array();
-            $supportedFields = SimpleForms::$plugin->fieldsService->getSupportedFieldTypes();
+        if (!isset($this->_fields[$form->id])) {
+            $this->_fields[$form->id] = [];
+            $supportedFields = SimpleForms::$supportedFields;
 
             // Get tabs
             foreach ($form->getFieldLayout()->getTabs() as $tab) {
@@ -242,7 +218,7 @@ class FormsService extends Component
                 /** @var Field $field */
                 foreach ($tab->getFields() as $field) {
                     // Get actual field
-                    if (! in_array(get_class($field), $supportedFields)) {
+                    if (!in_array(get_class($field), $supportedFields)) {
                         // We don't display unsupported fields
                         continue;
                     }
@@ -260,7 +236,7 @@ class FormsService extends Component
                         'input'     => $input,
                         'required'  => $field->required,
                         'element'   => $submission,
-                        'namespace' => $namespace
+                        'namespace' => $namespace,
                     ]);
 
                     // Add to fields
@@ -281,7 +257,7 @@ class FormsService extends Component
         if (isset($this->_fields[$form->id][$handle])) {
             return new \Twig_Markup($this->_fields[$form->id][$handle], Craft::$app->getView()->getTwig()->getCharset());
         } else {
-            return null;
+            return;
         }
     }
 
@@ -290,14 +266,15 @@ class FormsService extends Component
      *
      * @param Form $form
      *
-     * @return string
      * @throws \Twig_Error_Loader
      * @throws \yii\base\Exception
+     *
+     * @return Twig_Markup
      */
-    public function displayForm(Form $form)
+    public function displayForm(Form $form): Twig_Markup
     {
         // Get submission model
-        $submission = SimpleForms::$plugin->submissionsService->getActiveSubmission($form);
+        $submission = SimpleForms::$plugin->submissions->getActiveSubmission($form);
 
         // Set namespace
         $namespace = 'form_'.StringHelper::randomString(10);
@@ -305,18 +282,18 @@ class FormsService extends Component
 
         // Build field HTML
         $tabs = [];
-        $supportedFields = SimpleForms::$plugin->fieldsService->getSupportedFieldTypes();
-        $fieldTemplateInfo = SimpleForms::$plugin->simpleFormsService->getDisplayTemplateInfo('field', $form->fieldTemplate);
+        $supportedFields = SimpleForms::$supportedFields;
+        $fieldTemplateInfo = SimpleForms::$plugin->simpleForms->getDisplayTemplateInfo('field', $form->fieldTemplate);
 
         // Get the current templates path so we can restore it at the end of this function
         $siteTemplatesPath = Craft::$app->getView()->getTemplatesPath();
-        $pluginTemplatePath = SimpleForms::$plugin->getBasePath() . '/templates/_display/templates/';
+        $pluginTemplatePath = SimpleForms::$plugin->getBasePath().'/templates/_display/templates/';
 
         foreach ($form->getFieldLayout()->getTabs() as $tab) {
             // Tab information
             $tabs[$tab->id] = [
                 'info'   => $tab,
-                'fields' => []
+                'fields' => [],
             ];
 
             // Tab fields
@@ -324,7 +301,7 @@ class FormsService extends Component
             /** @var Field $field */
             foreach ($fields as $field) {
                 // Get actual field
-                if (! in_array(get_class($field), $supportedFields)) {
+                if (!in_array(get_class($field), $supportedFields)) {
                     // We don't display unsupported fields
                     continue;
                 }
@@ -342,7 +319,7 @@ class FormsService extends Component
                     'input'     => $input,
                     'required'  => $field->required,
                     'element'   => $submission,
-                    'namespace' => $namespace
+                    'namespace' => $namespace,
                 ]);
 
                 // Add to tabs
@@ -357,15 +334,15 @@ class FormsService extends Component
         $variables = [
             'form'    => $form,
             'tabs'    => $tabs,
-            'element' => $submission
+            'element' => $submission,
         ];
-        $bodyHtml = SimpleForms::$plugin->simpleFormsService->renderDisplayTemplate('tab', $form->tabTemplate, $variables);
+        $bodyHtml = SimpleForms::$plugin->simpleForms->renderDisplayTemplate('tab', $form->tabTemplate, $variables);
 
         // Use AntiSpam?
-        $antispamHtml = SimpleForms::$plugin->antiSpamService->render();
+        $antispamHtml = SimpleForms::$plugin->antiSpam->render();
 
         // Use reCAPTCHA?
-        $recaptchaHtml = SimpleForms::$plugin->recaptchaService->render();
+        $recaptchaHtml = SimpleForms::$plugin->recaptcha->render();
 
         // Build our complete form
         $variables = [
@@ -374,14 +351,14 @@ class FormsService extends Component
             'antispam'  => $antispamHtml,
             'recaptcha' => $recaptchaHtml,
             'element'   => $submission,
-            'namespace' => $namespace
+            'namespace' => $namespace,
         ];
-        $formHtml = SimpleForms::$plugin->simpleFormsService->renderDisplayTemplate('form', $form->formTemplate, $variables);
+        $formHtml = SimpleForms::$plugin->simpleForms->renderDisplayTemplate('form', $form->formTemplate, $variables);
 
         // Reset namespace
         Craft::$app->getView()->setNamespace(null);
 
         // Parse form
-        return new \Twig_Markup($formHtml, Craft::$app->getView()->getTwig()->getCharset());
+        return new Twig_Markup($formHtml, Craft::$app->getView()->getTwig()->getCharset());
     }
 }

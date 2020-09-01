@@ -1,4 +1,5 @@
 <?php
+
 namespace rias\simpleforms\elements;
 
 use Craft;
@@ -7,13 +8,12 @@ use craft\base\Field;
 use craft\db\Query;
 use craft\elements\actions\Delete;
 use craft\elements\db\ElementQueryInterface;
-use craft\fields\Assets;
-use craft\fields\BaseRelationField;
-use craft\fields\Categories;
+use craft\elements\User;
 use craft\helpers\UrlHelper;
 use craft\models\FieldLayout;
 use rias\simpleforms\elements\actions\ExportElementAction;
 use rias\simpleforms\elements\db\SubmissionsQuery;
+use rias\simpleforms\models\export\ExportValueInterface;
 use rias\simpleforms\SimpleForms;
 
 /**
@@ -120,7 +120,7 @@ class Submission extends Element
     }
 
     /**
-     * Returns the field layout used by this element
+     * Returns the field layout used by this element.
      *
      * @throws \Exception
      */
@@ -132,8 +132,9 @@ class Submission extends Element
     /**
      * Returns the fields associated with this form.
      *
-     * @return array
      * @throws \Exception
+     *
+     * @return array
      */
     public function getFields()
     {
@@ -143,16 +144,41 @@ class Submission extends Element
     /**
      * Get the form model.
      *
-     * @return Form
      * @throws \Exception
+     *
+     * @return Form
      */
     public function getForm()
     {
-        if (! isset($this->form)) {
-            $this->form = SimpleForms::$plugin->formsService->getFormById($this->formId);
+        if (!isset($this->form)) {
+            try {
+                $this->form = SimpleForms::$plugin->forms->getFormById($this->formId);
+            } catch (\Exception $e) {
+                // Do nothing
+            }
         }
 
         return $this->form;
+    }
+
+    public function export(array $fieldsToExport): array
+    {
+        $row = [];
+        foreach ($fieldsToExport as $handle) {
+            $value = $this->$handle;
+            if (is_object($value)) {
+                /** @var ExportValueInterface $class */
+                $className = get_class($value);
+                $classNameParts = explode('\\', $className);
+                $classNameWithoutNamespace = array_pop($classNameParts);
+
+                $class = 'rias\\simpleforms\\models\\export\\'.$classNameWithoutNamespace.'Export';
+                $value = $class::toColumn($value);
+            }
+            $row[] = $value;
+        }
+
+        return $row;
     }
 
     /**
@@ -162,7 +188,7 @@ class Submission extends Element
      */
     public function getCpEditUrl()
     {
-        return UrlHelper::cpUrl('simple-forms/submissions/edit/' . $this->id);
+        return UrlHelper::cpUrl('simple-forms/submissions/edit/'.$this->id);
     }
 
     /**
@@ -186,45 +212,34 @@ class Submission extends Element
     }
 
     /**
-     * Email this submission.
-     *
-     * @param mixed $overrideRecipients [Optional] Override recipients from form settings.
-     *
-     * @return bool
-     */
-    public function sendEmail($overrideRecipients = false)
-    {
-        return craft()->amForms_submissions->emailSubmission($this, $overrideRecipients);
-    }
-
-    /**
      * Returns this element type's sources.
      *
      * @param string|null $context
      *
-     * @return array|false
      * @throws \Exception
+     *
+     * @return array|false
      */
     protected static function defineSources(string $context = null): array
     {
         $sources = [
             [
-                'key' => '*',
-                'label' => Craft::t('simple-forms', 'All submissions'),
-                'criteria' => [],
-                'defaultSort' => ['dateCreated', 'desc']
+                'key'         => '*',
+                'label'       => Craft::t('simple-forms', 'All submissions'),
+                'criteria'    => [],
+                'defaultSort' => ['dateCreated', 'desc'],
             ],
         ];
 
-        $forms = SimpleForms::$plugin->formsService->getAllForms();
-        if ($forms) {
+        $forms = SimpleForms::$plugin->forms->getAllForms();
+        if (!empty($forms)) {
             /** @var Form $form */
             foreach ($forms as $form) {
                 $sources[] = [
                     'key'         => 'formId:'.$form->id,
                     'label'       => $form->name,
                     'criteria'    => ['formId' => $form->id],
-                    'defaultSort' => ['dateCreated', 'desc']
+                    'defaultSort' => ['dateCreated', 'desc'],
                 ];
             }
         }
@@ -234,9 +249,10 @@ class Submission extends Element
 
     protected static function defineActions(string $source = null): array
     {
-        $actions = array();
+        $actions = [];
 
         // Can the current user handle exports?
+        /** @var User $user */
         $user = Craft::$app->getUser()->getIdentity();
         if ($user->can('accessSimpleFormsExports')) {
             // Get export action
@@ -256,38 +272,53 @@ class Submission extends Element
     protected static function defineTableAttributes(): array
     {
         $attributes = [
-            'title'       => Craft::t('simple-forms','Title'),
-            'formName'    => Craft::t('simple-forms','Form name'),
-            'dateCreated' => Craft::t('simple-forms','Date created'),
-            'dateUpdated' => Craft::t('simple-forms','Date updated'),
-            'notes'       => Craft::t('simple-forms','Notes')
+            'title'       => Craft::t('simple-forms', 'Title'),
+            'formName'    => Craft::t('simple-forms', 'Form name'),
+            'dateCreated' => Craft::t('simple-forms', 'Date created'),
+            'dateUpdated' => Craft::t('simple-forms', 'Date updated'),
+            'notes'       => Craft::t('simple-forms', 'Notes'),
         ];
 
         /** @var Field $field */
         foreach (Craft::$app->getFields()->getAllFields('simple-forms') as $field) {
-            $attributes['field:'.$field->handle] = $field->name;
+            if (in_array(get_class($field), SimpleForms::$supportedFields)) {
+                $attributes['field:'.$field->id] = Craft::t('site', $field->name);
+            }
         }
 
         return $attributes;
     }
 
+    /**
+     * @param string $source
+     *
+     * @throws \Exception
+     *
+     * @return array
+     */
     protected static function defineDefaultTableAttributes(string $source): array
     {
-        $formId = explode(':', $source)[1];
-        $form = SimpleForms::$plugin->formsService->getFormById($formId);
-        $fields = $form->getFieldLayout()->getFields();
-
         $attributes = [
-            'title'       => Craft::t('simple-forms','Title'),
-            'formName'    => Craft::t('simple-forms','Form name'),
-            'dateCreated' => Craft::t('simple-forms','Date created'),
-            'dateUpdated' => Craft::t('simple-forms','Date updated'),
-            'notes'       => Craft::t('simple-forms','Notes')
+            'title'       => Craft::t('simple-forms', 'Title'),
+            'formName'    => Craft::t('simple-forms', 'Form name'),
+            'dateCreated' => Craft::t('simple-forms', 'Date created'),
+            'dateUpdated' => Craft::t('simple-forms', 'Date updated'),
+            'notes'       => Craft::t('simple-forms', 'Notes'),
         ];
+
+        if ($source === '*') {
+            return $attributes;
+        }
+
+        $formId = explode(':', $source)[1];
+        $form = SimpleForms::$plugin->forms->getFormById((int) $formId);
+        $fields = $form->getFieldLayout()->getFields();
 
         /** @var Field $field */
         foreach ($fields as $field) {
-            $attributes[$field->handle] = Craft::t('site', $field->name);
+            if (in_array(get_class($field), SimpleForms::$supportedFields)) {
+                $attributes['field:'.$field->id] = Craft::t('site', $field->name);
+            }
         }
 
         return $attributes;
@@ -295,11 +326,9 @@ class Submission extends Element
 
     protected function tableAttributeHtml(string $attribute): string
     {
-        Craft::$app->getContent()->populateElementContent($this);
-
         switch ($attribute) {
             case 'notes':
-                $notes = (new Query())
+                $notes = (string) (new Query())
                     ->select(['COUNT(*)'])
                     ->from('{{%simple-forms_notes}}')
                     ->where('submissionId=:submissionId', [':submissionId' => $this->id])
@@ -309,11 +338,13 @@ class Submission extends Element
                     $this->getCpEditUrl().'/notes',
                     $notes
                 );
-                break;
 
             default:
-                return parent::tableAttributeHtml($attribute);
-                break;
+                try {
+                    return parent::tableAttributeHtml($attribute);
+                } catch (\Exception $e) {
+                    return '';
+                }
         }
     }
 
@@ -347,16 +378,17 @@ class Submission extends Element
 
     /**
      * @param bool $isNew
+     *
      * @throws \yii\db\Exception
      */
     public function afterSave(bool $isNew)
     {
         $attributes = [
-            'order' => $this->order,
-            'authorId' => $this->authorId,
-            'formId' => $this->formId,
+            'order'      => $this->order,
+            'authorId'   => $this->authorId,
+            'formId'     => $this->formId,
             'formHandle' => $this->formHandle,
-            'userAgent' => $this->userAgent,
+            'userAgent'  => $this->userAgent,
         ];
 
         if ($isNew) {
@@ -371,5 +403,4 @@ class Submission extends Element
 
         parent::afterSave($isNew);
     }
-
 }

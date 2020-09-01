@@ -1,4 +1,5 @@
 <?php
+
 namespace rias\simpleforms\services;
 
 use Craft;
@@ -8,9 +9,9 @@ use GuzzleHttp\Client;
 use rias\simpleforms\SimpleForms;
 
 /**
- * simple-forms - reCAPTCHA service
+ * simple-forms - reCAPTCHA service.
  */
-class RecaptchaService extends Component
+class Recaptcha extends Component
 {
     /**
      * Render a reCAPTCHA widget.
@@ -25,13 +26,13 @@ class RecaptchaService extends Component
         // Is reCAPTCHA enabled?
         if (SimpleForms::$plugin->getSettings()->googleRecaptchaEnabled) {
             // Plugin's default template path
-            $templatePath = SimpleForms::$plugin->getBasePath() . '/templates/_display/templates/_antispam/';
+            $templatePath = SimpleForms::$plugin->getBasePath().'/templates/_display/templates/_antispam/';
 
             // Build reCAPTCHA HTML
             $oldPath = Craft::$app->getView()->getTemplatesPath();
             Craft::$app->getView()->setTemplatesPath($templatePath);
             $html = Craft::$app->getView()->renderTemplate('recaptcha', [
-                'siteKey' => SimpleForms::$plugin->getSettings()->googleRecaptchaSiteKey
+                'siteKey' => SimpleForms::$plugin->getSettings()->googleRecaptchaSiteKey,
             ]);
 
             // Reset templates path
@@ -61,14 +62,14 @@ class RecaptchaService extends Component
 
         // Get reCAPTCHA secret key
         $secretKey = SimpleForms::$plugin->getSettings()->googleRecaptchaSecretKey;
-        if (! $secretKey) {
+        if (!$secretKey) {
             return false;
         }
 
         // Google API parameters
         $params = [
             'secret'   => $secretKey,
-            'response' => $captcha
+            'response' => $captcha,
         ];
 
         // Set request
@@ -78,10 +79,10 @@ class RecaptchaService extends Component
         ]);
 
         // Handle response
-        if($result->getStatusCode() == 200) {
-            $json = json_decode((string)$result->getBody());
+        if ($result->getStatusCode() == 200) {
+            $json = json_decode((string) $result->getBody());
 
-            if($json->success) {
+            if ($json->success) {
                 return true;
             }
         }

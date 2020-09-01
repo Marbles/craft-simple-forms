@@ -7,7 +7,7 @@
     <form class="form form--{{ form.handle }}" method="post" accept-charset="utf-8" enctype="multipart/form-data"{% if form.submitAction|length %} action="{{ submitAction }}"{% endif %}>
         {# Only CSRF protection, when we stay on this site #}
         {% if not form.submitAction|length -%}
-            {{ csrfInput() }}
+            {{ craft.simpleForms.csrfInput() }}
         {% endif -%}
 
         <input type="hidden" name="action" value="{{ submitAction }}">

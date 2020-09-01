@@ -1,4 +1,5 @@
 <?php
+
 namespace rias\simpleforms\controllers;
 
 use Craft;
@@ -7,14 +8,13 @@ use craft\helpers\UrlHelper;
 use craft\web\Controller;
 use DateTime;
 use Exception;
-use rias\simpleforms\elements\db\SubmissionsQuery;
 use rias\simpleforms\elements\Form;
 use rias\simpleforms\elements\Submission;
 use rias\simpleforms\SimpleForms;
 use yii\web\HttpException;
 
 /**
- * simple-forms - Submissions controller
+ * simple-forms - Submissions controller.
  */
 class SubmissionsController extends Controller
 {
@@ -35,52 +35,48 @@ class SubmissionsController extends Controller
     /**
      * Edit a submission.
      *
-     * @param int|null $submissionId
+     * @param int|null        $submissionId
      * @param Submission|null $submission
+     *
      * @throws Exception
      * @throws HttpException
      */
     public function actionEditSubmission(int $submissionId = null, Submission $submission = null)
     {
         // Do we have a submission model?
-        if (! $submission) {
+        if (!$submission) {
             // We require a submission ID
-            if (! $submissionId) {
+            if ($submissionId === null) {
                 throw new HttpException(404);
             }
 
             // Get submission if available
-            $submission = SimpleForms::$plugin->submissionsService->getSubmissionById($submissionId);
-            if (! $submission) {
-                throw new Exception(Craft::t('simple-forms', 'No submission exists with the ID “{id}”.', ['id' => $submissionId]));
-            }
+            $submission = SimpleForms::$plugin->submissions->getSubmissionById($submissionId);
         }
 
         Craft::$app->getContent()->populateElementContent($submission);
 
         // Get form if available
-        $form = SimpleForms::$plugin->formsService->getFormById($submission->formId);
-        if (! $form) {
-            throw new Exception(Craft::t('simple-forms', 'No form exists with the ID “{id}”.', ['id' => $submission->formId]));
-        }
+        $form = SimpleForms::$plugin->forms->getFormById($submission->formId);
 
         // Get tabs
-        $tabs = array();
+        $tabs = [];
         $layoutTabs = $submission->getFieldLayout()->getTabs();
         foreach ($layoutTabs as $tab) {
-            $tabs[$tab->id] = array(
+            $tabs[$tab->id] = [
                 'label' => $tab->name,
-                'url' => '#' . $tab->getHtmlId()
-            );
+                'url'   => '#'.$tab->getHtmlId(),
+            ];
         }
 
         // Add notes to tabs
-        $tabs['notes'] = array(
+        $tabs['notes'] = [
             'label' => Craft::t('simple-forms', 'Notes'),
-            'url'   => $submission->getCpEditUrl() . '/notes'
-        );
+            'url'   => $submission->getCpEditUrl().'/notes',
+        ];
 
         // Set variables
+        $variables = [];
         $variables['submissionId'] = $submissionId;
         $variables['submission'] = $submission;
         $variables['form'] = $form;
@@ -104,10 +100,7 @@ class SubmissionsController extends Controller
         // Get the form
         $handle = Craft::$app->getRequest()->getRequiredBodyParam('handle');
         /** @var Form $form */
-        $form = SimpleForms::$plugin->formsService->getFormByHandle($handle);
-        if (! $form) {
-            throw new Exception(Craft::t('simple-forms', 'No form exists with the handle “{handle}”.', ['handle' => $handle]));
-        }
+        $form = SimpleForms::$plugin->forms->getFormByHandle($handle);
 
         // Get namespace
         $namespace = Craft::$app->getRequest()->getBodyParam('namespace');
@@ -116,38 +109,32 @@ class SubmissionsController extends Controller
         $submissionId = (int) Craft::$app->getRequest()->getBodyParam('submissionId');
 
         // Get the submission
+        $submission = new Submission();
         if ($submissionId) {
-            $submission = SimpleForms::$plugin->submissionsService->getSubmissionById($submissionId);
-
-            if (! $submission) {
-                throw new Exception(Craft::t('simple-forms', 'No submission exists with the ID “{id}”.', ['id' => $submissionId]));
-            }
-        } else {
-            $submission = new Submission();
+            $submission = SimpleForms::$plugin->submissions->getSubmissionById($submissionId);
         }
 
         // Front-end submission, trigger AntiSpam or reCAPTCHA?
-        if (! Craft::$app->getRequest()->getIsCpRequest()) {
+        if (!Craft::$app->getRequest()->getIsCpRequest()) {
             // Where was this submission submitted?
             $submission->submittedFrom = urldecode(Craft::$app->getRequest()->getReferrer());
 
             // Validate AntiSpam settings
-            $submission->spamFree = SimpleForms::$plugin->antiSpamService->verify($form->handle);
-
+            $submission->spamFree = SimpleForms::$plugin->antiSpam->verify($form->handle);
 
             // Redirect our spammers before reCAPTCHA can be triggered
-            if (! $submission->spamFree) {
+            if (!$submission->spamFree) {
                 return $this->_doRedirect($submission, false);
             } else {
-                SimpleForms::$plugin->antiSpamService->setMarkedAsNoSpam($form->handle);
+                SimpleForms::$plugin->antiSpam->setMarkedAsNoSpam($form->handle);
             }
 
             // Validate reCAPTCHA
             if (SimpleForms::$plugin->getSettings()->googleRecaptchaEnabled) {
-                $submission->spamFree = SimpleForms::$plugin->recaptchaService->verify();
+                $submission->spamFree = SimpleForms::$plugin->recaptcha->verify();
 
                 // Was it verified?
-                if (! $submission->spamFree) {
+                if (!$submission->spamFree) {
                     $submission->addError('spamFree', Craft::t('simple-forms', 'reCAPTCHA was not verified.'));
 
                     // Don't upload files now
@@ -180,28 +167,30 @@ class SubmissionsController extends Controller
 
         // Save field values from request
         $request = Craft::$app->getRequest();
-        $fieldsLocation = $namespace ?: $request->getParam('fieldsLocation', 'fields');
+        $fieldsLocation = $namespace ?: (string) $request->getParam('fieldsLocation', 'fields');
         $submission->setFieldValuesFromRequest($fieldsLocation);
 
         // Save submission
-        if (SimpleForms::$plugin->submissionsService->saveSubmission($submission)) {
+        if (SimpleForms::$plugin->submissions->saveSubmission($submission)) {
             // Remove spam free token
-            SimpleForms::$plugin->antiSpamService->verify($form->handle);
+            SimpleForms::$plugin->antiSpam->verify($form->handle);
 
             // Notification for new submissions
-            if (! Craft::$app->getRequest()->getIsCpRequest() && ! $submissionId) {
-                SimpleForms::$plugin->submissionsService->emailSubmission($submission);
+            if (!Craft::$app->getRequest()->getIsCpRequest() && !$submissionId) {
+                SimpleForms::$plugin->submissions->emailSubmission($submission);
             }
 
             // Redirect
             if (Craft::$app->getRequest()->getIsAjax()) {
                 $afterSubmitText = $form->afterSubmitText ? $form->afterSubmitText : Craft::t('simple-forms', 'Thanks for your submission.');
+
                 return $this->asJson([
-                    'success' => true,
-                    'afterSubmitText' => $afterSubmitText
+                    'success'         => true,
+                    'afterSubmitText' => $afterSubmitText,
                 ]);
             } elseif (Craft::$app->getRequest()->getIsCpRequest()) {
                 Craft::$app->getSession()->setNotice(Craft::t('simple-forms', 'Submission saved.'));
+
                 return $this->redirectToPostedUrl($submission);
             } else {
                 return $this->_doRedirect($submission, true);
@@ -210,22 +199,22 @@ class SubmissionsController extends Controller
             if (Craft::$app->getRequest()->getIsAjax()) {
                 return $this->asJson([
                     'success' => false,
-                    'errors' => $submission->getErrors()
+                    'errors'  => $submission->getErrors(),
                 ]);
             } elseif (Craft::$app->getRequest()->getIsCpRequest()) {
                 Craft::$app->getSession()->setError(Craft::t('simple-forms', 'Couldn’t save submission.'));
 
                 // Send the submission back to the template
                 return Craft::$app->getUrlManager()->setRouteParams([
-                    'submission' => $submission
+                    'submission' => $submission,
                 ]);
             } else {
                 // Remember active submissions
-                SimpleForms::$plugin->submissionsService->setActiveSubmission($submission);
+                SimpleForms::$plugin->submissions->setActiveSubmission($submission);
 
                 // Return the submission by the form's handle, for custom HTML possibilities
                 return Craft::$app->getUrlManager()->setRouteParams([
-                    $form->handle => $submission
+                    $form->handle => $submission,
                 ]);
             }
         }
@@ -244,13 +233,10 @@ class SubmissionsController extends Controller
 
         // Get the submission
         $submissionId = Craft::$app->getRequest()->getRequiredBodyParam('submissionId');
-        $submission = SimpleForms::$plugin->submissionsService->getSubmissionById($submissionId);
-        if (! $submission) {
-            throw new Exception(Craft::t('simple-forms', 'No submission exists with the ID “{id}”.', ['id' => $submissionId]));
-        }
+        $submission = SimpleForms::$plugin->submissions->getSubmissionById($submissionId);
 
         // Delete submission
-        if (SimpleForms::$plugin->submissionsService->deleteSubmission($submission)) {
+        if (SimpleForms::$plugin->submissions->deleteSubmission($submission)) {
             return $this->redirectToPostedUrl($submission);
         }
 
@@ -280,7 +266,7 @@ class SubmissionsController extends Controller
             $submissionIds = (new Query())
                 ->select('id')
                 ->from('{{%simple-forms_submissions}}')
-                ->where('dateCreated <= "' . $cleanUpFromDate->format('Y-m-d H:i:s') . '"')
+                ->where('dateCreated <= "'.$cleanUpFromDate->format('Y-m-d H:i:s').'"')
                 ->column();
 
             // Delete them!
@@ -290,7 +276,7 @@ class SubmissionsController extends Controller
         }
 
         return $this->asJson([
-            'success' => $success
+            'success' => $success,
         ]);
     }
 
@@ -298,7 +284,8 @@ class SubmissionsController extends Controller
      * Do redirect with {placeholders} support.
      *
      * @param Submission $submission
-     * @param boolean $submitted
+     * @param bool       $submitted
+     *
      * @throws Exception
      * @throws \yii\web\BadRequestHttpException
      */
@@ -306,8 +293,8 @@ class SubmissionsController extends Controller
     {
         $vars = array_merge(
             [
-                'siteUrl' => UrlHelper::siteUrl(),
-                'submitted' => $submitted
+                'siteUrl'   => UrlHelper::siteUrl(),
+                'submitted' => $submitted,
             ],
             $submission->getAttributes()
         );
@@ -315,7 +302,7 @@ class SubmissionsController extends Controller
         $url = null;
         $redirectUrl = $submission->getForm()->getRedirectUrl();
         if (empty($redirectUrl)) {
-            $url = Craft::$app->getRequest()->getFullPath() . '?submitted=' . ($submitted ? $submission->getForm()->handle : 0);
+            $url = Craft::$app->getRequest()->getFullPath().'?submitted='.($submitted ? $submission->getForm()->handle : 0);
         }
 
         $this->redirectToPostedUrl($vars, $url);

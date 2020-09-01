@@ -69,6 +69,18 @@
             errors: export.getErrors('name'),
             instructions: 'Optional name for your export.'|t('simple-forms')
         }) }}
+        {{ forms.selectField({
+            label: 'Type'|t('simple-forms'),
+            id: 'type',
+            name: 'type',
+            value: export.type,
+            options: [
+                {label: 'Excel (XLSX)', value: 'xlsx'},
+                {label: 'CSV', value: 'csv'},
+            ],
+            errors: export.getErrors('type'),
+            instructions: 'Which filetype?'|t('simple-forms')
+        }) }}
         <hr>
         <h3>{{ 'Which fields do you want to export?'|t('simple-forms') }}</h3>
         {% set exportFields = availableFields %}

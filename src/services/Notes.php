@@ -1,25 +1,36 @@
 <?php
+
 namespace rias\simpleforms\services;
 
+use Craft;
 use craft\base\Component;
 use craft\helpers\Db;
+use Exception;
 use rias\simpleforms\records\NoteRecord;
 
 /**
- * simple-forms - Notes service
+ * simple-forms - Notes service.
  */
-class NotesService extends Component
+class Notes extends Component
 {
     /**
      * Get a note by its ID.
      *
      * @param int $id
      *
-     * @return array|\yii\db\ActiveRecord
+     * @throws Exception
+     *
+     * @return NoteRecord
      */
     public function getNoteById($id)
     {
-        return NoteRecord::find()->where(Db::parseParam('id', $id))->one();
+        $note = NoteRecord::find()->where(Db::parseParam('id', $id))->one();
+
+        if (!$note || !$note instanceof NoteRecord) {
+            throw new Exception(Craft::t('simple-forms', 'No note exists with the ID “{id}”.', ['id' => $id]));
+        }
+
+        return $note;
     }
 
     /**
@@ -51,15 +62,17 @@ class NotesService extends Component
      *
      * @param int $id
      *
-     * @return bool
      * @throws \Exception
      * @throws \Throwable
      * @throws \yii\db\StaleObjectException
+     *
+     * @return bool
      */
     public function deleteNoteById($id)
     {
         /** @var NoteRecord $note */
         $note = $this->getNoteById($id);
-        return $note->delete();
+
+        return $note->delete() > 0;
     }
 }

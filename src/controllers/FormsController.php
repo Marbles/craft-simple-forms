@@ -1,8 +1,10 @@
 <?php
+
 namespace rias\simpleforms\controllers;
 
 use Craft;
 use craft\elements\Entry;
+use craft\elements\User;
 use craft\web\Controller;
 use Exception;
 use rias\simpleforms\elements\Form;
@@ -11,7 +13,7 @@ use rias\simpleforms\SimpleForms;
 use yii\web\HttpException;
 
 /**
- * simple-forms - Forms controller
+ * simple-forms - Forms controller.
  */
 class FormsController extends Controller
 {
@@ -20,14 +22,16 @@ class FormsController extends Controller
      *
      * @param $id
      * @param $module
+     *
      * @throws HttpException
      */
     public function __construct($id, $module)
     {
         parent::__construct($id, $module);
 
+        /** @var User $user */
         $user = Craft::$app->getUser()->getIdentity();
-        if (! $user->can('accessAmFormsForms')) {
+        if (!$user->can('accessAmFormsForms')) {
             throw new HttpException(403, Craft::t('simple-forms', 'This action may only be performed by users with the proper permissions.'));
         }
     }
@@ -47,8 +51,9 @@ class FormsController extends Controller
     /**
      * Create or edit a form.
      *
-     * @param int|null $formId
+     * @param int|null  $formId
      * @param Form|null $form
+     *
      * @throws Exception
      */
     public function actionEditForm(int $formId = null, Form $form = null)
@@ -58,16 +63,16 @@ class FormsController extends Controller
         ];
 
         // Do we have a form model?
-        if (! $form) {
+        if (!$form) {
             // Get form if available
-            if ($formId) {
-                $variables['form'] = SimpleForms::$plugin->formsService->getFormById($formId);
+            if ($formId !== null) {
+                $variables['form'] = SimpleForms::$plugin->forms->getFormById($formId);
+                $variables['groupId'] = $variables['form']->groupId;
 
-                if (! $variables['form']) {
+                if (!$variables['form']) {
                     throw new Exception(Craft::t('simple-forms', 'No form exists with the ID “{id}”.', ['id' => $formId]));
                 }
-            }
-            else {
+            } else {
                 $variables['form'] = new Form();
             }
         }
@@ -79,15 +84,15 @@ class FormsController extends Controller
         // Get available fields with our context
         $groupId = 1;
         $counter = 1;
-        $variables['groups'] = array();
+        $variables['groups'] = [];
         $fields = Craft::$app->getFields()->getAllFields('simple-forms');
         foreach ($fields as $field) {
             if ($counter % $fieldsPerSet == 1) {
-                $groupId ++;
+                $groupId++;
                 $counter = 1;
             }
             $variables['groups'][$groupId]['fields'][] = $field;
-            $counter ++;
+            $counter++;
         }
 
         // Get redirectEntryId elementType
@@ -97,10 +102,10 @@ class FormsController extends Controller
         $variables['availableAttributes'] = [];
         $submission = new Submission();
         $ignoreAttributes = [
-            'slug', 'uri', 'root', 'lft', 'rgt', 'level', 'searchScore', 'localeEnabled', 'archived', 'spamFree'
+            'slug', 'uri', 'root', 'lft', 'rgt', 'level', 'searchScore', 'localeEnabled', 'archived', 'spamFree',
         ];
         foreach ($submission->getAttributes() as $attribute => $value) {
-            if (! in_array($attribute, $ignoreAttributes)) {
+            if (!in_array($attribute, $ignoreAttributes)) {
                 $variables['availableAttributes'][] = $attribute;
             }
         }
@@ -126,14 +131,10 @@ class FormsController extends Controller
 
         $formId = $request->getBodyParam('formId');
         if ($formId && $formId !== 'copy') {
-            $form = SimpleForms::$plugin->formsService->getFormById($formId);
-
-            if (! $form) {
-                throw new Exception(Craft::t('simple-forms', 'No form exists with the ID “{id}”.', ['id' => $formId]));
-            }
+            $form = SimpleForms::$plugin->forms->getFormById($formId);
         }
 
-        if ($form->fieldLayoutId) {
+        if ($form->fieldLayoutId !== null) {
             Craft::$app->getFields()->deleteLayoutById($form->fieldLayoutId);
         }
 
@@ -146,42 +147,43 @@ class FormsController extends Controller
         $redirectEntryId = $request->getBodyParam('redirectEntryId');
 
         // Form attributes
-        $form->redirectEntryId          = $redirectEntryId && is_array($redirectEntryId) && count($redirectEntryId) ? $redirectEntryId[0] : null;
-        $form->name                     = $request->getBodyParam('name');
-        $form->handle                   = $request->getBodyParam('handle');
-        $form->titleFormat              = $request->getBodyParam('titleFormat');
-        $form->submitAction             = $request->getBodyParam('submitAction');
-        $form->submitButton             = $request->getBodyParam('submitButton');
-        $form->afterSubmit              = $request->getBodyParam('afterSubmit');
-        $form->afterSubmitText          = $request->getBodyParam('afterSubmitText');
-        $form->submissionEnabled        = $request->getBodyParam('submissionEnabled');
-        $form->displayTabTitles         = $request->getBodyParam('displayTabTitles');
-        $form->redirectUrl              = $request->getBodyParam('redirectUrl');
-        $form->sendCopy                 = $request->getBodyParam('sendCopy');
-        $form->sendCopyTo               = $request->getBodyParam('sendCopyTo');
-        $form->notificationEnabled      = $request->getBodyParam('notificationEnabled');
+        $form->redirectEntryId = $redirectEntryId && is_array($redirectEntryId) && count($redirectEntryId) ? $redirectEntryId[0] : null;
+        $form->name = $request->getBodyParam('name');
+        $form->handle = $request->getBodyParam('handle');
+        $form->groupId = $request->getBodyParam('groupId');
+        $form->titleFormat = $request->getBodyParam('titleFormat');
+        $form->submitAction = $request->getBodyParam('submitAction');
+        $form->submitButton = $request->getBodyParam('submitButton');
+        $form->afterSubmit = $request->getBodyParam('afterSubmit');
+        $form->afterSubmitText = $request->getBodyParam('afterSubmitText');
+        $form->submissionEnabled = $request->getBodyParam('submissionEnabled');
+        $form->displayTabTitles = $request->getBodyParam('displayTabTitles');
+        $form->redirectUrl = $request->getBodyParam('redirectUrl');
+        $form->sendCopy = $request->getBodyParam('sendCopy');
+        $form->sendCopyTo = $request->getBodyParam('sendCopyTo');
+        $form->notificationEnabled = $request->getBodyParam('notificationEnabled');
         $form->notificationFilesEnabled = $request->getBodyParam('notificationFilesEnabled');
-        $form->notificationRecipients   = $request->getBodyParam('notificationRecipients');
-        $form->notificationSubject      = $request->getBodyParam('notificationSubject');
-        $form->confirmationSubject      = $request->getBodyParam('confirmationSubject');
-        $form->notificationSenderName   = $request->getBodyParam('notificationSenderName');
-        $form->confirmationSenderName   = $request->getBodyParam('confirmationSenderName');
-        $form->notificationSenderEmail  = $request->getBodyParam('notificationSenderEmail');
-        $form->confirmationSenderEmail  = $request->getBodyParam('confirmationSenderEmail');
+        $form->notificationRecipients = $request->getBodyParam('notificationRecipients');
+        $form->notificationSubject = $request->getBodyParam('notificationSubject');
+        $form->confirmationSubject = $request->getBodyParam('confirmationSubject');
+        $form->notificationSenderName = $request->getBodyParam('notificationSenderName');
+        $form->confirmationSenderName = $request->getBodyParam('confirmationSenderName');
+        $form->notificationSenderEmail = $request->getBodyParam('notificationSenderEmail');
+        $form->confirmationSenderEmail = $request->getBodyParam('confirmationSenderEmail');
         $form->notificationReplyToEmail = $request->getBodyParam('notificationReplyToEmail');
-        $form->formTemplate             = $request->getBodyParam('formTemplate', $form->formTemplate);
-        $form->tabTemplate              = $request->getBodyParam('tabTemplate', $form->tabTemplate);
-        $form->fieldTemplate            = $request->getBodyParam('fieldTemplate', $form->fieldTemplate);
-        $form->notificationTemplate     = $request->getBodyParam('notificationTemplate', $form->notificationTemplate);
-        $form->confirmationTemplate     = $request->getBodyParam('confirmationTemplate', $form->confirmationTemplate);
+        $form->formTemplate = $request->getBodyParam('formTemplate', $form->formTemplate);
+        $form->tabTemplate = $request->getBodyParam('tabTemplate', $form->tabTemplate);
+        $form->fieldTemplate = $request->getBodyParam('fieldTemplate', $form->fieldTemplate);
+        $form->notificationTemplate = $request->getBodyParam('notificationTemplate', $form->notificationTemplate);
+        $form->confirmationTemplate = $request->getBodyParam('confirmationTemplate', $form->confirmationTemplate);
 
         // Duplicate form, so the name and handle are taken
         if ($formId && $formId === 'copy') {
-            SimpleForms::$plugin->formsService->getUniqueNameAndHandle($form);
+            SimpleForms::$plugin->forms->getUniqueNameAndHandle($form);
         }
 
         // Save form
-        if (SimpleForms::$plugin->formsService->saveForm($form)) {
+        if (SimpleForms::$plugin->forms->saveForm($form)) {
             Craft::$app->getSession()->setNotice(Craft::t('simple-forms', 'Form saved.'));
 
             $this->redirectToPostedUrl($form);
@@ -190,33 +192,8 @@ class FormsController extends Controller
 
             // Send the form back to the template
             Craft::$app->getUrlManager()->setRouteParams([
-                'form' => $form
+                'form' => $form,
             ]);
         }
-    }
-
-    /**
-     * Delete a form.
-     */
-    public function actionDeleteForm()
-    {
-        $this->requirePostRequest();
-
-        // Get form if available
-        $formId = craft()->request->getRequiredPost('formId');
-        $form = SimpleForms::$plugin->formsService->getFormById($formId);
-        if (! $form) {
-            throw new Exception(Craft::t('No form exists with the ID “{id}”.', array('id' => $formId)));
-        }
-
-        // Delete form
-        if (SimpleForms::$plugin->formsService->deleteForm($form)) {
-            craft()->userSession->setNotice(Craft::t('Form deleted.'));
-        }
-        else {
-            craft()->userSession->setError(Craft::t('Couldn’t delete form.'));
-        }
-
-        $this->redirectToPostedUrl($form);
     }
 }

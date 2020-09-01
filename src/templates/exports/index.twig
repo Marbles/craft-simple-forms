@@ -29,20 +29,14 @@
                     <tr data-id="{{ export.id }}" data-name="{{ '{form} export'|t('simple-forms', {'form': form.name}) }}">
                         <th scope="row" data-title="{{ 'Form'|t('simple-forms') }}">
                             {% if export.submissions %}
-                                {{ form.name|t('simple-forms') }}
+                                {{ '{form} export'|t('simple-forms', {'form': form.name}) }}
                             {% else %}
                                 <a href="{{ url('simple-forms/exports/edit/' ~ export.id) }}">{{ form.name|t('simple-forms') }}</a>
                             {% endif %}
                         </th>
                         <td data-title="{{ 'Name'|t('simple-forms') }}">{{ export.name }}</td>
                         <td data-title="{{ 'Total submissions'|t('simple-forms') }}">{{ export.total }}</td>
-                        <td data-title="{{ 'Total submissions that met the criteria'|t('simple-forms') }}">
-                            {% if export.totalCriteria is not null %}
-                                {{ export.totalCriteria }}
-                            {% else %}
-                                <a href="{{ actionUrl('simple-forms/exports/get-total-by-criteria', { id: export.id }) }}">{{ 'Calculate'|t('simple-forms') }}</a>
-                            {% endif %}
-                        </td>
+                        <td data-title="{{ 'Total submissions that met the criteria'|t('simple-forms') }}">{{ export.totalCriteria }}</td>
                         <td data-title="{{ 'Status'|t('simple-forms') }}">
                             {% if export.finished %}
                                 <a href="{{ actionUrl('simple-forms/exports/download-export', { id: export.id }) }}">{{ 'Download'|t('simple-forms') }}</a>
@@ -56,7 +50,7 @@
                                 {{ 'Busy'|t('simple-forms') }}
                             {% endif %}
                         </td>
-                        <td data-title="{{ 'Date updated'|t('simple-forms') }}">{{ export.dateUpdated | date }}</td>
+                        <td data-title="{{ 'Date updated'|t('simple-forms') }}">{{ export.dateUpdated | datetime }}</td>
                         <td class="thin">
                             <a class="delete icon" title="{{ 'Delete'|t('simple-forms') }}" role="button"></a>
                         </td>

@@ -1,23 +1,22 @@
 <?php
+
 namespace rias\simpleforms\services;
 
 use Craft;
 use craft\base\Component;
-use craft\db\Query;
 use craft\helpers\StringHelper;
 use craft\records\Field;
-use rias\simpleforms\SimpleForms;
-use yii\db\Schema;
 
 /**
- * simple-forms - Install service
+ * simple-forms - Install service.
  */
-class InstallService extends Component
+class Install extends Component
 {
     /**
      * Install essential information.
      *
      * @param array $settings
+     *
      * @throws \Throwable
      */
     public function install(array $settings)
@@ -33,11 +32,11 @@ class InstallService extends Component
             // Create fields
             foreach ($fields as $field) {
                 $fieldConfig = [
-                    'name' => Craft::t('simple-forms', $field['name']),
-                    'handle' => isset($field['handle']) ? $field['handle'] : StringHelper::camelCase(Craft::t('simple-forms', $field['name'])),
-                    'translationMethod' => isset($field['translationMethod']) ? $field['translationMethod'] : 'site',
+                    'name'                 => Craft::t('simple-forms', $field['name']),
+                    'handle'               => isset($field['handle']) ? $field['handle'] : StringHelper::camelCase(Craft::t('simple-forms', $field['name'])),
+                    'translationMethod'    => isset($field['translationMethod']) ? $field['translationMethod'] : 'site',
                     'translationKeyFormat' => isset($field['translationKeyFormat']) ? $field['translationKeyFormat'] : null,
-                    'type' => $field['type'],
+                    'type'                 => $field['type'],
                 ];
 
                 if (isset($field['instructions'])) {

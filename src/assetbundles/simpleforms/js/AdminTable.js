@@ -1,3 +1,4 @@
+/* global Craft */
 (function($) {
 
     Craft.SimpleFormsAdminTable = Craft.AdminTable.extend(
@@ -49,7 +50,6 @@
                     return;
                 }
 
-                console.log(this.$tbody);
                 var $row = $(row).appendTo(this.$tbody),
                     $deleteBtn = $row.find('.delete'),
                     $switcher = $row.find('.criteriaSwitcher select'),

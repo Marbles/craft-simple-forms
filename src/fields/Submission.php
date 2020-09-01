@@ -1,12 +1,12 @@
 <?php
+
 namespace rias\simpleforms\fields;
 
 use Craft;
-use craft\base\Field;
 use craft\fields\BaseRelationField;
 
 /**
- * Form fieldtype
+ * Form fieldtype.
  */
 class Submission extends BaseRelationField
 {

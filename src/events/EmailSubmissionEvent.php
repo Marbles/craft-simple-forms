@@ -1,13 +1,13 @@
 <?php
 /**
  * @link https://craftcms.com/
+ *
  * @copyright Copyright (c) Pixel & Tonic, Inc.
  * @license https://craftcms.github.io/license/
  */
 
 namespace rias\simpleforms\events;
 
-use craft\base\ElementInterface;
 use craft\events\CancelableEvent;
 use craft\mail\Message;
 use rias\simpleforms\elements\Submission;

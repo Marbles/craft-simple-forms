@@ -1,4 +1,5 @@
 <?php
+
 namespace rias\simpleforms\models;
 
 use craft\base\Model;
@@ -10,6 +11,7 @@ class Settings extends Model
     public $quietErrors = false;
     public $fieldsPerSet = 8;
     public $bccEmailAddress = '';
+    public $useInjectedCsrfInput = false;
 
     /** Submissions */
     public $cleanUpSubmissions = true;

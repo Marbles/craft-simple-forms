@@ -1,17 +1,27 @@
 <?php
+
 namespace rias\simpleforms\variables;
 
 use Craft;
 use craft\base\Field;
-use craft\base\FieldInterface;
+use craft\helpers\Template;
+use craft\web\View;
+use rias\simpleforms\elements\Form;
 use rias\simpleforms\SimpleForms;
+use Twig_Markup;
 
 class SimpleFormsVariable
 {
     /**
+     * @var int
+     */
+    private $_injected = 0;
+
+    /**
      * Get the Plugin's name.
      *
      * @example {{ craft.simpleForms.name }}
+     *
      * @return string
      */
     public function getName()
@@ -19,49 +29,8 @@ class SimpleFormsVariable
         return SimpleForms::$plugin->name;
     }
 
-    /**
-     * Get a setting value by their handle and type.
-     *
-     * @param string $handle
-     * @param string $type
-     * @param mixed  $defaultValue
-     *
-     * @return mixed
-     */
-    public function getSettingValue($handle, $type, $defaultValue = null)
-    {
-        return craft()->amForms_settings->getSettingValue($handle, $type, $defaultValue);
-    }
-
-    /**
-     * Get a setting value by their handle and type.
-     *
-     * @param string $handle
-     * @param string $type
-     * @param mixed  $defaultValue
-     *
-     * @return mixed
-     */
-    public function getSettingsValueByHandleAndType($handle, $type, $defaultValue = null)
-    {
-        return $this->getSettingValue($handle, $type, $defaultValue);
-    }
-
-
     // Field methods
     // =========================================================================
-
-    /**
-     * Get proper field types.
-     *
-     * @param array $fieldTypes All Craft's fieldtypes.
-     *
-     * @return array
-     */
-    public function getProperFieldTypes($fieldTypes)
-    {
-        return SimpleForms::$plugin->fieldsService->getProperFieldTypes($fieldTypes);
-    }
 
     /**
      * Get field handles.
@@ -70,16 +39,15 @@ class SimpleFormsVariable
      */
     public function getFieldHandles()
     {
-        $handles = array();
+        $handles = [];
         /** @var Field[] $fields */
         $fields = Craft::$app->getFields()->getAllFields('simple-forms');
         foreach ($fields as $field) {
-            $handles[] = array('label' => $field->name, 'value' => $field->handle);
+            $handles[] = ['label' => $field->name, 'value' => $field->handle];
         }
 
         return $handles;
     }
-
 
     // Submission methods
     // =========================================================================
@@ -89,43 +57,42 @@ class SimpleFormsVariable
      *
      * @param array $attributes
      *
-     * @return ElementCriteriaModel
+     * @return \rias\simpleforms\elements\db\SubmissionsQuery
      */
-    public function submissions($attributes = array())
+    public function submissions($attributes = [])
     {
-        return craft()->amForms_submissions->getCriteria($attributes);
+        return SimpleForms::$plugin->submissions->getCriteria($attributes);
     }
 
     /**
      * Get a submission by its ID.
      *
-     * @param int $id
+     * @param int  $id
      * @param bool $setAsActive [Optional] Set as active submission, for editing purposes.
      *
+     * @throws \Exception
+     *
+     * @return array|bool|\craft\base\ElementInterface|\rias\simpleforms\elements\Submission|null
      */
     public function getSubmissionById($id, $setAsActive = false)
     {
         if ($setAsActive) {
             // Get the submission
-            $submission = $this->getSubmissionById($id);
-            if (! $submission) {
-                SimpleForms::$plugin->simpleFormsService->handleError(Craft::t('simple-forms', 'No submission exists with the ID “{id}”.', ['id' => $id]));
-                return false;
-            }
+            try {
+                $submission = $this->getSubmissionById($id);
+            } catch (\Exception $e) {
+                SimpleForms::$plugin->simpleForms->handleError(Craft::t('simple-forms', 'No submission exists with the ID “{id}”.', ['id' => $id]));
 
-            // Get the form
-            $form = $submission->getForm();
-            if (! $form) {
-                SimpleForms::$plugin->simpleFormsService->handleError(Craft::t('simple-forms', 'No form exists with the ID “{id}”.', ['id' => $submission->formId]));
                 return false;
             }
 
             // Set active submission
-            SimpleForms::$plugin->submissionsService->setActiveSubmission($submission);
+            SimpleForms::$plugin->submissions->setActiveSubmission($submission);
 
             return $submission;
         }
-        return SimpleForms::$plugin->submissionsService->getSubmissionById($id);
+
+        return SimpleForms::$plugin->submissions->getSubmissionById($id);
     }
 
     /**
@@ -133,31 +100,38 @@ class SimpleFormsVariable
      *
      * @param int $id
      *
-     * @return string
+     * @throws \Twig_Error_Loader
+     * @throws \yii\base\Exception
+     * @throws \Exception
+     *
+     * @return Twig_Markup
      */
-    public function displaySubmission($id)
+    public function displaySubmission($id): Twig_Markup
     {
         // Get the submission
-        $submission = $this->getSubmissionById($id);
-        if (! $submission) {
-            SimpleForms::$plugin->simpleFormsService->handleError(Craft::t('simple-forms', 'No submission exists with the ID “{id}”.', ['id' => $id]));
-            return false;
+        try {
+            $submission = $this->getSubmissionById($id);
+        } catch (\Exception $e) {
+            SimpleForms::$plugin->simpleForms->handleError(Craft::t('simple-forms', 'No submission exists with the ID “{id}”.', ['id' => $id]));
+
+            return new Twig_Markup('', Craft::$app->charset);
         }
 
         // Get the form
-        $form = $submission->getForm();
-        if (! $form) {
-            SimpleForms::$plugin->simpleFormsService->handleError(Craft::t('simple-forms', 'No form exists with the ID “{id}”.', ['id' => $submission->formId]));
-            return false;
+        try {
+            $form = $submission->getForm();
+        } catch (\Exception $e) {
+            SimpleForms::$plugin->simpleForms->handleError(Craft::t('simple-forms', 'No form exists with the ID “{id}”.', ['id' => $submission->formId]));
+
+            return new Twig_Markup('', Craft::$app->charset);
         }
 
         // Set active submission
-        SimpleForms::$plugin->submissionsService->setActiveSubmission($submission);
+        SimpleForms::$plugin->submissions->setActiveSubmission($submission);
 
         // Display the edit form!
-        return SimpleForms::$plugin->formsService->displayForm($form);
+        return SimpleForms::$plugin->forms->displayForm($form);
     }
-
 
     // Form methods
     // =========================================================================
@@ -167,11 +141,17 @@ class SimpleFormsVariable
      *
      * @param int $id
      *
-     * @return AmForms_FormModel|null
+     * @throws \Exception
+     *
+     * @return array|\craft\base\ElementInterface|\rias\simpleforms\elements\Form|null
      */
     public function getFormById($id)
     {
-        return SimpleForms::$plugin->formsService->getFormById($id);
+        try {
+            return SimpleForms::$plugin->forms->getFormById($id);
+        } catch (\Exception $e) {
+            SimpleForms::$plugin->simpleForms->handleError(Craft::t('simple-forms', $e->getMessage()));
+        }
     }
 
     /**
@@ -179,33 +159,44 @@ class SimpleFormsVariable
      *
      * @param string $handle
      *
-     * @return AmForms_FormModel|null
+     * @throws \Exception
+     *
+     * @return array|\craft\base\ElementInterface|null
      */
     public function getFormByHandle($handle)
     {
-        return SimpleForms::$plugin->formsService->getFormByHandle($handle);
+        try {
+            return SimpleForms::$plugin->forms->getFormByHandle($handle);
+        } catch (\Exception $e) {
+            SimpleForms::$plugin->simpleForms->handleError(Craft::t('simple-forms', $e->getMessage()));
+
+            return;
+        }
     }
 
     /**
      * Get all forms.
      *
+     * @throws \Exception
+     *
      * @return array
      */
     public function getAllForms()
     {
-        return SimpleForms::$plugin->formsService->getAllForms();
+        return SimpleForms::$plugin->forms->getAllForms();
     }
 
     /**
      * Get a namespace for a form.
      *
-     * @param AmForms_FormModel $form
+     *
+     * @param Form $form
      *
      * @return string
      */
-    public function getNamespaceForForm(AmForms_FormModel $form)
+    public function getNamespaceForForm(Form $form)
     {
-        return SimpleForms::$plugin->formsService->getNamespaceForForm($form);
+        return SimpleForms::$plugin->forms->getNamespaceForForm($form);
     }
 
     /**
@@ -213,37 +204,36 @@ class SimpleFormsVariable
      *
      * @param string $handle
      *
-     * @return AmForms_FormModel|bool
+     * @throws \Exception
+     *
+     * @return array|bool|\craft\base\ElementInterface|Form
      */
     public function getForm($handle)
     {
-        // Get the form
-        $form = $this->getFormByHandle($handle);
-        if (! $form) {
-            SimpleForms::$plugin->simpleFormsService->handleError(Craft::t('simple-forms', 'No form exists with the handle “{handle}”.', ['handle' => $handle]));
-            return false;
-        }
-        return $form;
+        return $this->getFormByHandle($handle);
     }
 
     /**
      * Display a form.
      *
-     * @param string $handle
+     * @param string|Form $form
      *
-     * @return string
+     * @throws \Twig_Error_Loader
+     * @throws \yii\base\Exception
+     * @throws \Exception
+     *
+     * @return Twig_Markup
      */
-    public function displayForm($handle)
+    public function displayForm($form): Twig_Markup
     {
-        // Get the form
-        $form = $this->getFormByHandle($handle);
-        if (! $form) {
-            SimpleForms::$plugin->simpleFormsService->handleError(Craft::t('simple-forms', 'No form exists with the handle “{handle}”.', ['handle' => $handle]));
-            return false;
+        if (!$form instanceof Form) {
+            // Get the form
+            /** @var Form $form */
+            $form = $this->getFormByHandle($form);
         }
-        return SimpleForms::$plugin->formsService->displayForm($form);
-    }
 
+        return SimpleForms::$plugin->forms->displayForm($form);
+    }
 
     // Anti spam methods
     // =========================================================================
@@ -251,11 +241,14 @@ class SimpleFormsVariable
     /**
      * Display AntiSpam widget.
      *
+     * @throws \Twig_Error_Loader
+     * @throws \yii\base\Exception
+     *
      * @return bool|string
      */
     public function displayAntispam()
     {
-        return SimpleForms::$plugin->antiSpamService->render();
+        return SimpleForms::$plugin->antiSpam->render();
     }
 
     /**
@@ -265,6 +258,94 @@ class SimpleFormsVariable
      */
     public function displayRecaptcha()
     {
-        return SimpleForms::$plugin->recaptchaService->render();
+        return SimpleForms::$plugin->recaptcha->render();
+    }
+
+    public function supportedFields()
+    {
+        return SimpleForms::$supportedFields;
+    }
+
+    /**
+     * Gets Form Groups.
+     *
+     * @param int $id Group ID (optional)
+     *
+     * @return array
+     */
+    public function getAllFormGroups($id = null)
+    {
+        return SimpleForms::$plugin->groups->getAllFormGroups($id);
+    }
+
+    /**
+     * Gets all forms in a specific group by ID.
+     *
+     * @param $id
+     *
+     * @return Form
+     */
+    public function getFormsByGroupId($id)
+    {
+        return SimpleForms::$plugin->groups->getFormsByGroupId($id);
+    }
+
+    /**
+     * Returns a script to get a CSRF input field.
+     *
+     * @return Twig_Markup
+     */
+    public function csrfInput(): Twig_Markup
+    {
+        $generalConfig = Craft::$app->getConfig()->getGeneral();
+
+        if (SimpleForms::$plugin->getSettings()->useInjectedCsrfInput) {
+            $uri = '/'.$generalConfig->actionTrigger.'/simple-forms/csrf/input';
+
+            return $this->_getScript($uri);
+        }
+
+        if ($generalConfig->enableCsrfProtection === true) {
+            return Template::raw('<input type="hidden" name="'.$generalConfig->csrfTokenName.'" value="'.Craft::$app->getRequest()->getCsrfToken().'">');
+        }
+
+        return Template::raw('');
+    }
+
+    // Private Methods
+    // =========================================================================
+
+    /**
+     * Returns a script to inject the output of a URI into a div.
+     *
+     * @param string $uri
+     *
+     * @return Twig_Markup
+     */
+    private function _getScript(string $uri): Twig_Markup
+    {
+        $view = Craft::$app->getView();
+
+        if ($this->_injected === 0) {
+            $view->registerJs('
+                function simpleFormsInject(id, uri) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.onload = function () {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            document.getElementById("simple-forms-inject-" + id).innerHTML = this.responseText;
+                        }
+                    };
+                    xhr.open("GET", uri);
+                    xhr.send();
+                }
+            ', View::POS_END);
+        }
+
+        $this->_injected++;
+        $id = 'simple-forms-inject-'.$this->_injected;
+        $view->registerJs('simpleFormsInject('.$this->_injected.', "'.$uri.'");', View::POS_END);
+        $output = '<span class="simpleForms-inject" id="'.$id.'"></span>';
+
+        return Template::raw($output);
     }
 }

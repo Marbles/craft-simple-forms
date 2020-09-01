@@ -1,15 +1,16 @@
 <?php
+
 namespace rias\simpleforms\controllers;
 
 use Craft;
+use craft\elements\User;
 use craft\web\Controller;
-use Exception;
 use rias\simpleforms\models\Settings;
 use rias\simpleforms\SimpleForms;
 use yii\web\HttpException;
 
 /**
- * simple-forms - Settings controller
+ * simple-forms - Settings controller.
  */
 class SettingsController extends Controller
 {
@@ -18,14 +19,16 @@ class SettingsController extends Controller
      *
      * @param $id
      * @param $module
+     *
      * @throws HttpException
      */
     public function __construct($id, $module)
     {
         parent::__construct($id, $module);
 
+        /** @var User $user */
         $user = Craft::$app->getUser()->getIdentity();
-        if (! $user->can('accessAmFormsSettings')) {
+        if (!$user->can('accessAmFormsSettings')) {
             throw new HttpException(403, Craft::t('simple-forms', 'This action may only be performed by users with the proper permissions.'));
         }
     }
@@ -41,30 +44,35 @@ class SettingsController extends Controller
     /**
      * Show settings.
      *
-     * @param string $settingsType
+     * @param string        $settingsType
      * @param Settings|null $settings
+     *
      * @return \yii\web\Response
      */
     public function actionShowSettings(string $settingsType, Settings $settings = null)
     {
         $overrides = Craft::$app->getConfig()->getConfigFromFile(strtolower(SimpleForms::$plugin->handle));
 
+        $variables = [];
         $variables['overrides'] = array_keys($overrides);
         $variables['type'] = $settingsType;
         $variables['settings'] = $settings ?? SimpleForms::$plugin->getSettings();
 
-        return $this->renderTemplate('simple-forms/settings/' . $settingsType, $variables);
+        return $this->renderTemplate('simple-forms/settings/'.$settingsType, $variables);
     }
 
     /**
      * Saves settings.
      *
+     * @throws \craft\errors\MissingComponentException
      * @throws \yii\web\BadRequestHttpException
+     *
+     * @return \yii\web\Response
      */
     public function actionSaveSettings()
     {
         $this->requirePostRequest();
-        $settingsType = Craft::$app->getRequest()->getBodyParam('settingsType');
+        $settingsType = (string) Craft::$app->getRequest()->getBodyParam('settingsType');
         $postData = Craft::$app->getRequest()->getBodyParam('settings');
         $settings = SimpleForms::$plugin->getSettings();
         foreach ($postData as $settingKey => $value) {

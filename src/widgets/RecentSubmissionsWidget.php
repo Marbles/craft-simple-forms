@@ -1,4 +1,5 @@
 <?php
+
 namespace rias\simpleforms\widgets;
 
 use Craft;
@@ -7,7 +8,6 @@ use rias\simpleforms\elements\Form;
 use rias\simpleforms\SimpleForms;
 
 /**
- *
  * @property string $name
  * @property mixed $bodyHtml
  * @property mixed $settingsHtml
@@ -30,8 +30,9 @@ class RecentSubmissionsWidget extends Widget
     }
 
     /**
-     * @return string
      * @throws \Exception
+     *
+     * @return string
      */
     public function getTitle(): string
     {
@@ -40,10 +41,10 @@ class RecentSubmissionsWidget extends Widget
         // Add form name, if a form was chosen
         if ($this->form != 0) {
             /** @var Form $form */
-            $form = SimpleForms::$plugin->formsService->getFormById($this->form);
+            $form = SimpleForms::$plugin->forms->getFormById($this->form);
 
             if ($form) {
-                $title .= ': ' . $form->name;
+                $title .= ': '.$form->name;
             }
         }
 
@@ -51,17 +52,18 @@ class RecentSubmissionsWidget extends Widget
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public static function iconPath()
     {
-        return SimpleForms::$plugin->getBasePath() . '/resources/icon.svg';
+        return SimpleForms::$plugin->getBasePath().'/resources/icon.svg';
     }
 
     /**
-     * @return false|string
      * @throws \Twig_Error_Loader
      * @throws \yii\base\Exception
+     *
+     * @return false|string
      */
     public function getBodyHtml()
     {
@@ -69,7 +71,7 @@ class RecentSubmissionsWidget extends Widget
         $settings = $this;
 
         // Set submissions criteria
-        $criteria = SimpleForms::$plugin->submissionsService->getCriteria();
+        $criteria = SimpleForms::$plugin->submissions->getCriteria();
         if ($settings->form != 0) {
             $criteria->formId = $settings->form;
         }
@@ -88,16 +90,17 @@ class RecentSubmissionsWidget extends Widget
     }
 
     /**
-     * @return null|string
      * @throws \Exception
+     *
+     * @return null|string
      */
     public function getSettingsHtml()
     {
         $forms = [
-            0 => Craft::t('simple-forms', 'All forms')
+            0 => Craft::t('simple-forms', 'All forms'),
         ];
-        $availableForms = SimpleForms::$plugin->formsService->getAllForms();
-        if ($availableForms) {
+        $availableForms = SimpleForms::$plugin->forms->getAllForms();
+        if (!empty($availableForms)) {
             /** @var Form $form */
             foreach ($availableForms as $form) {
                 $forms[$form->id] = $form->name;
@@ -105,8 +108,8 @@ class RecentSubmissionsWidget extends Widget
         }
 
         return Craft::$app->getView()->renderTemplate('simple-forms/_widgets/recentsubmissions/settings', [
-           'settings'       => $this,
-           'availableForms' => $forms
+            'settings'       => $this,
+            'availableForms' => $forms,
         ]);
     }
 }

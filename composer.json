@@ -2,6 +2,7 @@
     "name": "rias/craft-simple-forms",
     "description": "Forms, made simple",
     "type": "craft-plugin",
+    "version": "2.0.2",
     "keywords": [
         "craft",
         "cms",
@@ -10,8 +11,8 @@
         "forms"
     ],
     "support": {
-        "docs": "https://github.com/Rias500/craft-simple-forms/blob/master/README.md",
-        "issues": "https://github.com/Rias500/craft-simple-forms/issues"
+        "docs": "https://github.com/Marbles/craft-simple-forms/blob/master/README.md",
+        "issues": "https://github.com/Marbles/craft-simple-forms/issues"
     },
     "license": "MIT",
     "authors": [
@@ -21,7 +22,10 @@
         }
     ],
     "require": {
-        "craftcms/cms": "^3.0.0"
+        "craftcms/cms": "^3.1.0",
+        "ext-json": "*",
+        "box/spout": "^2.7",
+        "tightenco/collect": "^5.7"
     },
     "repositories": [
         {
@@ -40,19 +44,20 @@
         "schemaVersion": "0.1.2",
         "hasCpSettings": true,
         "hasCpSection": true,
-        "changelogUrl": "https://raw.githubusercontent.com/Rias500/craft-simple-forms/master/CHANGELOG.md",
+        "changelogUrl": "https://raw.githubusercontent.com/Marbles/craft-simple-forms/master/CHANGELOG.md",
         "components": {
-            "simpleFormsService": "rias\\simpleforms\\services\\SimpleFormsService",
-            "antiSpamService": "rias\\simpleforms\\services\\AntiSpamService",
-            "exportsService": "rias\\simpleforms\\services\\ExportsService",
-            "fieldsService": "rias\\simpleforms\\services\\FieldsService",
-            "installService": "rias\\simpleforms\\services\\InstallService",
-            "notesService": "rias\\simpleforms\\services\\NotesService",
-            "recaptchaService": "rias\\simpleforms\\services\\RecaptchaService",
-            "settingsService": "rias\\simpleforms\\services\\SettingsService",
-            "submissionsService": "rias\\simpleforms\\services\\SubmissionsService",
-            "formsService": "rias\\simpleforms\\services\\FormsService"
+            "simpleForms": "rias\\simpleforms\\services\\SimpleForms",
+            "antiSpam": "rias\\simpleforms\\services\\AntiSpam",
+            "exports": "rias\\simpleforms\\services\\Exports",
+            "install": "rias\\simpleforms\\services\\Install",
+            "notes": "rias\\simpleforms\\services\\Notes",
+            "recaptcha": "rias\\simpleforms\\services\\Recaptcha",
+            "submissions": "rias\\simpleforms\\services\\Submissions",
+            "forms": "rias\\simpleforms\\services\\Forms",
+            "groups": "rias\\simpleforms\\services\\Groups"
         },
         "class": "rias\\simpleforms\\SimpleForms"
+    },
+    "require-dev": {
     }
 }

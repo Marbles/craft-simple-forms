@@ -1,18 +1,18 @@
 <?php
+
 namespace rias\simpleforms\elements\db;
 
-use craft\db\Query;
 use craft\elements\db\ElementQuery;
 use craft\helpers\Db;
-use ns\prefix\elements\Product;
 
 class FormQuery extends ElementQuery
 {
     public $name;
     public $handle;
+    public $groupId;
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function __construct($elementType, array $config = [])
     {
@@ -37,6 +37,13 @@ class FormQuery extends ElementQuery
         return $this;
     }
 
+    public function groupId($value)
+    {
+        $this->groupId = $value;
+
+        return $this;
+    }
+
     protected function beforePrepare(): bool
     {
         $this->joinElementTable('simple-forms_forms');
@@ -46,6 +53,7 @@ class FormQuery extends ElementQuery
                                simple-forms_forms.redirectEntryId,
                                simple-forms_forms.name,
                                simple-forms_forms.handle,
+                               simple-forms_forms.groupId,
                                simple-forms_forms.titleFormat,
                                simple-forms_forms.submitAction,
                                simple-forms_forms.submitButton,
@@ -77,6 +85,9 @@ class FormQuery extends ElementQuery
         }
         if ($this->name) {
             $this->subQuery->andWhere(Db::parseParam('simple-forms_forms.name', $this->name));
+        }
+        if ($this->groupId) {
+            $this->subQuery->andWhere(Db::parseParam('simple-forms_forms.groupId', $this->groupId));
         }
 
         return parent::beforePrepare();

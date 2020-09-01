@@ -1,15 +1,17 @@
 <?php
+
 namespace rias\simpleforms\services;
 
 use Craft;
 use craft\base\Component;
-use craft\helpers\FileHelper;
-use rias\simpleforms\SimpleForms;
+use craft\elements\Asset;
+use Exception;
+use rias\simpleforms\SimpleForms as SimpleFormsPlugin;
 
 /**
- * simple-forms service
+ * simple-forms service.
  */
-class SimpleFormsService extends Component
+class SimpleForms extends Component
 {
     private $_assetFolders = [];
 
@@ -17,14 +19,15 @@ class SimpleFormsService extends Component
      * Handle an error message.
      *
      * @param string $message
+     *
+     * @throws Exception
      */
     public function handleError($message)
     {
         $e = new Exception($message);
-        if (craft()->amForms_settings->isSettingValueEnabled('quietErrors', SimpleFormsModel::SettingGeneral)) {
-            AmFormsPlugin::log('Error::', $e->getMessage(), LogLevel::Warning);
-        }
-        else {
+        if (SimpleFormsPlugin::$plugin->getSettings()->quietErrors) {
+            Craft::error($e->getMessage(), 'simple-forms');
+        } else {
             throw $e;
         }
     }
@@ -32,45 +35,46 @@ class SimpleFormsService extends Component
     /**
      * Get the server path for an asset.
      *
-     * @param AssetFileModel $asset
+     * @param Asset $asset
      *
      * @return string
      */
     public function getPathForAsset($asset)
     {
         // Do we know the source folder path?
-        if (! isset($this->_assetFolders[ $asset->folderId ])) {
-            $assetFolder = craft()->assets->getFolderById($asset->folderId);
-            $assetSource = $assetFolder->getSource();
-            $assetSettings = $assetSource->settings;
+        if (!isset($this->_assetFolders[$asset->folderId])) {
+            $assetFolder = Craft::$app->getAssets()->getFolderById($asset->folderId);
+            $assetSource = $assetFolder->getVolume();
+            $assetSettings = $assetSource->getSettings();
             if (!array_key_exists('path', $assetSettings)) {
                 $assetSettings['path'] = '';
             }
             if ($assetFolder->path) {
-                $assetSettings['path'] = $assetSettings['path'] . $assetFolder->path;
+                $assetSettings['path'] = $assetSettings['path'].$assetFolder->path;
             }
-            $this->_assetFolders[ $asset->folderId ] = $assetSettings['path'];
+            $this->_assetFolders[$asset->folderId] = $assetSettings['path'];
         }
 
-        return craft()->config->parseEnvironmentString($this->_assetFolders[ $asset->folderId ]);
+        return $this->_assetFolders[$asset->folderId];
     }
 
     /**
      * Get a display (front-end displayForm) template information.
      *
-     * @param string $defaultTemplate Which default template are we looking for?
+     * @param string $defaultTemplate  Which default template are we looking for?
      * @param string $overrideTemplate Which override template was given?
      *
-     * @return array
      * @throws \yii\base\Exception
+     *
+     * @return array
      */
     public function getDisplayTemplateInfo($defaultTemplate, $overrideTemplate)
     {
         // Plugin's default template path
-        $templatePath = SimpleForms::$plugin->basePath . '/templates/_display/templates/';
+        $templatePath = SimpleFormsPlugin::$plugin->basePath.'/templates/_display/templates/';
 
-        $settingsName = $defaultTemplate . 'Template';
-        $templateSetting = SimpleForms::$plugin->getSettings()->$settingsName;
+        $settingsName = $defaultTemplate.'Template';
+        $templateSetting = SimpleFormsPlugin::$plugin->getSettings()->$settingsName;
 
         if (empty($overrideTemplate) && $templateSetting) {
             $overrideTemplate = $templateSetting;
@@ -79,7 +83,7 @@ class SimpleFormsService extends Component
         // Is the override template set?
         if ($overrideTemplate) {
             // Is the value a folder, or folder with template?
-            $templateFile = Craft::$app->getView()->getTemplatesPath() . '/' . $overrideTemplate;
+            $templateFile = Craft::$app->getView()->getTemplatesPath().'/'.$overrideTemplate;
 
             if (is_dir($templateFile)) {
                 // Only a folder was given, so still the default template template
@@ -87,7 +91,7 @@ class SimpleFormsService extends Component
             } else {
                 // Try to find the template for each available template extension
                 foreach (Craft::$app->getConfig()->getGeneral()->defaultTemplateExtensions as $extension) {
-                    if (file_exists($templateFile . '.' . $extension)) {
+                    if (file_exists($templateFile.'.'.$extension)) {
                         $defaultTemplate = $overrideTemplate;
                         $templatePath = Craft::$app->getPath()->getSiteTemplatesPath();
                         break;
@@ -105,6 +109,9 @@ class SimpleFormsService extends Component
      * @param string $defaultTemplate  Which default template are we looking for?
      * @param string $overrideTemplate Which override template was given?
      * @param array  $variables        Template variables.
+     *
+     * @throws \Twig_Error_Loader
+     * @throws \yii\base\Exception
      *
      * @return string
      */

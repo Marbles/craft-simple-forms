@@ -1,3 +1,4 @@
+/* global Craft, Garnish */
 (function($) {
 
     Craft.FormAttributes = Garnish.Base.extend(
@@ -69,11 +70,10 @@
 
                 // Refocus field
                 var $field = this.$currentField[0],
-                    startPos = $field.selectionStart,
                     endPos = $field.selectionEnd,
                     value = $field.value.length;
 
-                if (endPos == 0) {
+                if (endPos === 0) {
                     endPos = value;
                 }
 

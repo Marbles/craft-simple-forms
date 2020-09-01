@@ -38,6 +38,7 @@ class SimpleFormsAsset extends AssetBundle
             'js/AdminTable.js',
             'js/FieldLayoutDesigner.js',
             'js/FormAttributes.js',
+            'js/Groups.js',
         ];
 
         $this->css = [

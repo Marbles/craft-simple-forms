@@ -1,4 +1,5 @@
 <?php
+
 namespace rias\simpleforms\fields;
 
 use Craft;
@@ -6,14 +7,14 @@ use craft\fields\BaseRelationField;
 use rias\simpleforms\elements\Form as FormElement;
 
 /**
- * Form fieldtype
+ * Form fieldtype.
  */
 class Form extends BaseRelationField
 {
     public $allowMultipleSources = false;
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public static function displayName(): string
     {

@@ -1,9 +1,11 @@
 <?php
+
 namespace rias\simpleforms\controllers;
 
 use Craft;
 use craft\base\Field;
 use craft\base\FieldInterface;
+use craft\elements\User;
 use craft\fields\MissingField;
 use craft\fields\PlainText;
 use craft\helpers\ArrayHelper;
@@ -13,7 +15,7 @@ use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
 
 /**
- * simple-forms - Fields controller
+ * simple-forms - Fields controller.
  */
 class FieldsController extends Controller
 {
@@ -22,14 +24,16 @@ class FieldsController extends Controller
      *
      * @param $id
      * @param $module
+     *
      * @throws HttpException
      */
     public function __construct($id, $module)
     {
         parent::__construct($id, $module);
 
+        /** @var User $user */
         $user = Craft::$app->getUser()->getIdentity();
-        if (! $user->can('accessAmFormsFields')) {
+        if (!$user->can('accessAmFormsFields')) {
             throw new HttpException(403, Craft::t('simple-forms', 'This action may only be performed by users with the proper permissions.'));
         }
     }
@@ -49,10 +53,12 @@ class FieldsController extends Controller
     /**
      * Create or edit a field.
      *
-     * @param int|null $fieldId
+     * @param int|null   $fieldId
      * @param Field|null $field
-     * @return \yii\web\Response
+     *
      * @throws NotFoundHttpException
+     *
+     * @return \yii\web\Response
      */
     public function actionEditField(int $fieldId = null, Field $field = null)
     {
@@ -111,13 +117,18 @@ class FieldsController extends Controller
                 $compatible = in_array($class, $compatibleFieldTypes, true);
                 $fieldTypeOptions[] = [
                     'value' => $class,
-                    'label' => $class::displayName() . ($compatible ? '' : ' ⚠️'),
+                    'label' => $class::displayName().($compatible ? '' : ' ⚠️'),
                 ];
             }
         }
 
         // Sort them by name
         ArrayHelper::multisort($fieldTypeOptions, 'label');
+
+        // Only allow supported fieldTypes
+        $fieldTypeOptions = collect($fieldTypeOptions)->filter(function ($fieldType) {
+            return in_array($fieldType['value'], SimpleForms::$supportedFields);
+        })->toArray();
 
         return $this->renderTemplate('simple-forms/fields/_edit', compact(
             'fieldId',
@@ -148,14 +159,14 @@ class FieldsController extends Controller
         Craft::$app->content->contentTable = '{{%simple-forms_content}}';
 
         $field = $fieldsService->createField([
-            'type' => $type,
-            'id' => $request->getBodyParam('fieldId'),
-            'name' => $request->getBodyParam('name'),
-            'handle' => $request->getBodyParam('handle'),
-            'instructions' => $request->getBodyParam('instructions'),
-            'translationMethod' => $request->getBodyParam('translationMethod', Field::TRANSLATION_METHOD_NONE),
+            'type'                 => $type,
+            'id'                   => $request->getBodyParam('fieldId'),
+            'name'                 => $request->getBodyParam('name'),
+            'handle'               => $request->getBodyParam('handle'),
+            'instructions'         => $request->getBodyParam('instructions'),
+            'translationMethod'    => $request->getBodyParam('translationMethod', Field::TRANSLATION_METHOD_NONE),
             'translationKeyFormat' => $request->getBodyParam('translationKeyFormat'),
-            'settings' => $request->getBodyParam('types.' . $type),
+            'settings'             => $request->getBodyParam('types.'.$type),
         ]);
 
         if (!$fieldsService->saveField($field)) {
@@ -163,10 +174,10 @@ class FieldsController extends Controller
 
             // Send the field back to the template
             Craft::$app->getUrlManager()->setRouteParams([
-                'field' => $field
+                'field' => $field,
             ]);
 
-            return null;
+            return;
         }
 
         Craft::$app->getSession()->setNotice(Craft::t('app', 'Field saved.'));

@@ -1,18 +1,21 @@
 <?php
+
 namespace rias\simpleforms\elements;
 
 use Craft;
 use craft\base\Element;
 use craft\base\Field;
 use craft\db\Query;
+use craft\elements\actions\Delete;
 use craft\elements\db\ElementQueryInterface;
 use craft\elements\Entry;
+use craft\helpers\App;
 use craft\helpers\UrlHelper;
 use rias\simpleforms\elements\db\FormQuery;
+use rias\simpleforms\records\ExportRecord;
 use rias\simpleforms\SimpleForms;
 
 /**
- *
  * @property string $namespace
  * @property null|Entry $redirectEntry
  * @property array $fields
@@ -78,15 +81,17 @@ class Form extends Element
     public $notificationTemplate;
     /** @var string */
     public $confirmationTemplate;
+    /** @var int */
+    public $groupId;
 
     public function __construct(array $config = [])
     {
         parent::__construct($config);
 
         // Craft email settings
-        $settings = Craft::$app->getSystemSettings()->getEmailSettings();
+        $settings = App::mailSettings();
         $systemEmail = $settings->fromEmail;
-        $systemName =  $settings->fromEmail;
+        $systemName = $settings->fromEmail;
 
         $this->notificationRecipients = $this->notificationRecipients ?: $systemEmail;
         $this->notificationSenderEmail = $this->notificationSenderEmail ?: $systemEmail;
@@ -105,9 +110,9 @@ class Form extends Element
      *
      * @return string
      */
-    function __toString()
+    public function __toString()
     {
-        return Craft::t('simple-forms', $this->name);
+        return $this->name;
     }
 
     public static function find(): ElementQueryInterface
@@ -122,12 +127,12 @@ class Form extends Element
      */
     public function getFields()
     {
-        if (! isset($this->_fields)) {
-            $this->_fields = array();
+        if (!isset($this->_fields)) {
+            $this->_fields = [];
             $layoutFields = $this->getFieldLayout()->getFields();
             /** @var Field $field */
             foreach ($layoutFields as $field) {
-                $this->_fields[ $field->handle ] = $field;
+                $this->_fields[$field->handle] = $field;
             }
         }
 
@@ -135,7 +140,7 @@ class Form extends Element
     }
 
     /**
-     * @inheritDoc BaseElementModel::isEditable()
+     * {@inheritdoc} BaseElementModel::isEditable()
      *
      * @return bool
      */
@@ -151,7 +156,7 @@ class Form extends Element
      */
     public function getCpEditUrl()
     {
-        return UrlHelper::cpUrl('simple-forms/forms/edit/' . $this->id);
+        return UrlHelper::cpUrl('simple-forms/forms/edit/'.$this->id);
     }
 
     /**
@@ -176,30 +181,58 @@ class Form extends Element
 
     protected static function defineSources(string $context = null): array
     {
-        return [
+        $sources = [
             [
-                'key' => '*',
-                'label' => Craft::t('simple-forms', 'All forms'),
-                'criteria' => []
+                'key'      => '*',
+                'label'    => Craft::t('simple-forms', 'All forms'),
+                'criteria' => [],
             ],
         ];
+
+        $groups = SimpleForms::$plugin->groups->getAllFormGroups();
+
+        foreach ($groups as $group) {
+            $key = 'group:'.$group->id;
+            $sources[] = [
+                'key'      => $key,
+                'label'    => Craft::t('simple-forms', $group->name),
+                'data'     => ['id' => $group->id],
+                'criteria' => ['groupId' => $group->id],
+            ];
+        }
+
+        return $sources;
+    }
+
+    protected static function defineActions(string $source = null): array
+    {
+        $actions = [];
+
+        // Get delete action
+        $actions[] = new Delete([
+            'confirmationMessage' => Craft::t('simple-forms', 'Are you sure you want to delete the selected forms?'),
+            'successMessage'      => Craft::t('simple-forms', 'Forms deleted.'),
+        ]);
+
+        // Set actions
+        return $actions;
     }
 
     protected static function defineTableAttributes(): array
     {
         return [
-            'name' => Craft::t('simple-forms', 'Name'),
-            'handle' => Craft::t('simple-forms', 'Handle'),
-            'numberOfFields' => Craft::t('simple-forms', 'Number of fields'),
-            'totalSubmissions' => Craft::t('simple-forms', 'Total submissions')
+            'name'             => Craft::t('simple-forms', 'Name'),
+            'handle'           => Craft::t('simple-forms', 'Handle'),
+            'numberOfFields'   => Craft::t('simple-forms', 'Number of fields'),
+            'totalSubmissions' => Craft::t('simple-forms', 'Total submissions'),
         ];
     }
 
     protected static function defineSortOptions(): array
     {
         return [
-            'name' => Craft::t('simple-forms', 'Name'),
-            'handle' => Craft::t('simple-forms', 'Handle')
+            'name'   => Craft::t('simple-forms', 'Name'),
+            'handle' => Craft::t('simple-forms', 'Handle'),
         ];
     }
 
@@ -207,32 +240,28 @@ class Form extends Element
     {
         switch ($attribute) {
             case 'handle':
-                return '<code>' . $this->handle . '</code>';
-                break;
+                return '<code>'.$this->handle.'</code>';
 
             case 'numberOfFields':
-                $totalFields = (new Query())
+                $totalFields = (string) (new Query())
                     ->select('COUNT(*)')
                     ->from('{{%fieldlayoutfields}}')
-                    ->where('layoutId=:layoutId', array(':layoutId' => $this->fieldLayoutId))
+                    ->where('layoutId=:layoutId', [':layoutId' => $this->fieldLayoutId])
                     ->scalar();
 
                 return '<a href="'.$this->getCpEditUrl().'#designer">'.$totalFields.'</a>';
-                break;
 
             case 'totalSubmissions':
-                $totalSubmissions = (new Query())
+                $totalSubmissions = (string) (new Query())
                     ->select('COUNT(*)')
                     ->from('{{%simple-forms_submissions}}')
-                    ->where('formId=:formId', array(':formId' => $this->id))
+                    ->where('formId=:formId', [':formId' => $this->id])
                     ->scalar();
 
                 return '<a href="'.UrlHelper::cpUrl('simple-forms/submissions').'">'.$totalSubmissions.'</a>';
-                break;
 
             default:
                 return parent::getTableAttributeHtml($attribute);
-                break;
         }
     }
 
@@ -245,7 +274,7 @@ class Form extends Element
     {
         return [
             'name',
-            'handle'
+            'handle',
         ];
     }
 
@@ -260,15 +289,13 @@ class Form extends Element
     /**
      * Return the form's redirect Entry.
      *
-     * @return null|Entry
+     * @return array|\craft\base\ElementInterface|Entry|null
      */
     public function getRedirectEntry()
     {
         if ($this->redirectEntryId) {
             return Entry::find()->id($this->redirectEntryId)->one();
         }
-
-        return null;
     }
 
     /**
@@ -282,7 +309,6 @@ class Form extends Element
         if ($entry) {
             return $entry->url;
         }
-        return null;
     }
 
     /**
@@ -292,7 +318,7 @@ class Form extends Element
      */
     public function getNamespace()
     {
-        return SimpleForms::$plugin->formsService->getNamespaceForForm($this);
+        return SimpleForms::$plugin->forms->getNamespaceForForm($this);
     }
 
     /**
@@ -300,13 +326,14 @@ class Form extends Element
      *
      * @param string $handle
      *
-     * @return string
      * @throws \Twig_Error_Loader
      * @throws \yii\base\Exception
+     *
+     * @return string
      */
     public function displayField($handle)
     {
-        return SimpleForms::$plugin->formsService->displayField($this, $handle);
+        return SimpleForms::$plugin->forms->displayField($this, $handle);
     }
 
     /**
@@ -316,17 +343,19 @@ class Form extends Element
      *
      * @example {{ entry.fieldHandle.first().displayForm() }}
      *
-     * @return string
      * @throws \Twig_Error_Loader
      * @throws \yii\base\Exception
+     *
+     * @return \Twig_Markup
      */
-    public function displayForm()
+    public function displayForm(): \Twig_Markup
     {
-        return SimpleForms::$plugin->formsService->displayForm($this);
+        return SimpleForms::$plugin->forms->displayForm($this);
     }
 
     /**
      * @param bool $isNew
+     *
      * @throws \yii\db\Exception
      */
     public function afterSave(bool $isNew)
@@ -334,42 +363,69 @@ class Form extends Element
         $command = \Craft::$app->db->createCommand();
 
         $fields = [
-            'redirectEntryId' => $this->redirectEntryId,
-            'name' => $this->name,
-            'handle' => $this->handle,
-            'titleFormat' => $this->titleFormat ,
-            'submitAction' => $this->submitAction,
-            'submitButton' => $this->submitButton,
-            'afterSubmit' => $this->afterSubmit,
-            'afterSubmitText' => $this->afterSubmitText,
-            'submissionEnabled' => $this->submissionEnabled ,
-            'displayTabTitles' => $this->displayTabTitles ,
-            'redirectUrl' => $this->redirectUrl,
-            'sendCopy' => $this->sendCopy ,
-            'sendCopyTo' => $this->sendCopyTo,
-            'notificationEnabled' => $this->notificationEnabled ,
-            'notificationFilesEnabled' => $this->notificationFilesEnabled ,
-            'notificationRecipients' => $this->notificationRecipients,
-            'notificationSubject' => $this->notificationSubject,
-            'confirmationSubject' => $this->confirmationSubject,
-            'notificationSenderName' => $this->notificationSenderName,
-            'confirmationSenderName' => $this->confirmationSenderName,
-            'notificationSenderEmail' => $this->notificationSenderEmail,
-            'confirmationSenderEmail' => $this->confirmationSenderEmail,
+            'redirectEntryId'          => $this->redirectEntryId,
+            'groupId'                  => $this->groupId,
+            'name'                     => $this->name,
+            'handle'                   => $this->handle,
+            'titleFormat'              => $this->titleFormat,
+            'submitAction'             => $this->submitAction,
+            'submitButton'             => $this->submitButton,
+            'afterSubmit'              => $this->afterSubmit,
+            'afterSubmitText'          => $this->afterSubmitText,
+            'submissionEnabled'        => $this->submissionEnabled,
+            'displayTabTitles'         => $this->displayTabTitles,
+            'redirectUrl'              => $this->redirectUrl,
+            'sendCopy'                 => $this->sendCopy,
+            'sendCopyTo'               => $this->sendCopyTo,
+            'notificationEnabled'      => $this->notificationEnabled,
+            'notificationFilesEnabled' => $this->notificationFilesEnabled,
+            'notificationRecipients'   => $this->notificationRecipients,
+            'notificationSubject'      => $this->notificationSubject,
+            'confirmationSubject'      => $this->confirmationSubject,
+            'notificationSenderName'   => $this->notificationSenderName,
+            'confirmationSenderName'   => $this->confirmationSenderName,
+            'notificationSenderEmail'  => $this->notificationSenderEmail,
+            'confirmationSenderEmail'  => $this->confirmationSenderEmail,
             'notificationReplyToEmail' => $this->notificationReplyToEmail,
-            'formTemplate' => $this->formTemplate,
-            'tabTemplate' => $this->tabTemplate,
-            'fieldTemplate' => $this->fieldTemplate,
-            'notificationTemplate' => $this->notificationTemplate,
-            'confirmationTemplate' => $this->confirmationTemplate,
+            'formTemplate'             => $this->formTemplate,
+            'tabTemplate'              => $this->tabTemplate,
+            'fieldTemplate'            => $this->fieldTemplate,
+            'notificationTemplate'     => $this->notificationTemplate,
+            'confirmationTemplate'     => $this->confirmationTemplate,
         ];
 
         if ($isNew) {
-                $command->insert('{{%simple-forms_forms}}', array_merge(['id' => $this->id], $fields))->execute();
+            $command->insert('{{%simple-forms_forms}}', array_merge(['id' => $this->id], $fields))->execute();
         } else {
-                $command->update('{{%simple-forms_forms}}', $fields, ['id' => $this->id])->execute();
+            $command->update('{{%simple-forms_forms}}', $fields, ['id' => $this->id])->execute();
         }
 
         parent::afterSave($isNew);
+    }
+
+    /**
+     * @throws \Throwable
+     * @throws \yii\db\StaleObjectException
+     *
+     * @return bool
+     */
+    public function beforeDelete(): bool
+    {
+        if (!is_null($this->id)) {
+            $exports = SimpleForms::$plugin->exports->getExportsByFormId($this->id);
+            foreach ($exports as $export) {
+                if ($export instanceof ExportRecord) {
+                    SimpleForms::$plugin->exports->deleteExportById($export->id);
+                }
+            }
+
+            $submissions = Submission::find()->formId($this->id)->all();
+            /** @var Submission $submission */
+            foreach ($submissions as $submission) {
+                SimpleForms::$plugin->submissions->deleteSubmission($submission);
+            }
+        }
+
+        return parent::beforeDelete();
     }
 }

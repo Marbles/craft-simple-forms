@@ -1,16 +1,16 @@
 <?php
+
 namespace rias\simpleforms\services;
 
 use Craft;
 use craft\base\Component;
 use rias\simpleforms\events\AntiSpamEvent;
 use rias\simpleforms\SimpleForms;
-use yii\base\Event;
 
 /**
- * simple-forms - AntiSpam service
+ * simple-forms - AntiSpam service.
  */
-class AntiSpamService extends Component
+class AntiSpam extends Component
 {
     const EVENT_VERIFY_ANTI_SPAM = 'onVerifyAntiSpam';
 
@@ -39,6 +39,9 @@ class AntiSpamService extends Component
     /**
      * Render AntiSpam functionality.
      *
+     * @throws \Twig_Error_Loader
+     * @throws \yii\base\Exception
+     *
      * @return bool|string
      */
     public function render()
@@ -47,19 +50,19 @@ class AntiSpamService extends Component
 
         // Plugin's default template path
         $oldPath = Craft::$app->getView()->getTemplatesPath();
-        $templatePath = SimpleForms::$plugin->getBasePath() . '/templates/_display/templates/_antispam/';
+        $templatePath = SimpleForms::$plugin->getBasePath().'/templates/_display/templates/_antispam/';
         Craft::$app->getView()->setTemplatesPath($templatePath);
 
         // Honeypot enabled?
         if (SimpleForms::$plugin->getSettings()->honeypotEnabled) {
-            if(($result = $this->_renderHoneypot(SimpleForms::$plugin->getSettings()->honeypotName)) !== false) {
+            if (($result = $this->_renderHoneypot(SimpleForms::$plugin->getSettings()->honeypotName)) !== false) {
                 $rendered[] = $result;
             }
         }
 
         // Time check enabled?
         if (SimpleForms::$plugin->getSettings()->timeCheckEnabled) {
-            if(($result = $this->_renderTime(SimpleForms::$plugin->getSettings()->minimumTimeInSeconds)) !== false) {
+            if (($result = $this->_renderTime(SimpleForms::$plugin->getSettings()->minimumTimeInSeconds)) !== false) {
                 $rendered[] = $result;
             }
         }
@@ -71,7 +74,7 @@ class AntiSpamService extends Component
 
         // Origin check enabled?
         if (SimpleForms::$plugin->getSettings()->originCheckEnabled) {
-            if(($result = $this->_renderOrigin()) !== false) {
+            if (($result = $this->_renderOrigin()) !== false) {
                 $rendered[] = $result;
             }
         }
@@ -97,41 +100,41 @@ class AntiSpamService extends Component
         // Get AntiSpam settings
         // Honeypot enabled?
         if (SimpleForms::$plugin->getSettings()->honeypotEnabled) {
-            if (! $this->_verifyHoneypot(SimpleForms::$plugin->getSettings()->honeypotName)) {
+            if (!$this->_verifyHoneypot(SimpleForms::$plugin->getSettings()->honeypotName)) {
                 return false;
             }
         }
 
         // Time check enabled?
-        if (SimpleForms::$plugin->getSettings()->timeCheckEnabled && ! $this->isMarkedAsNoSpam($formHandle)) {
-            if (! $this->_verifyTime(SimpleForms::$plugin->getSettings()->minimumTimeInSeconds)) {
+        if (SimpleForms::$plugin->getSettings()->timeCheckEnabled && !$this->isMarkedAsNoSpam($formHandle)) {
+            if (!$this->_verifyTime(SimpleForms::$plugin->getSettings()->minimumTimeInSeconds)) {
                 return false;
             }
         }
 
         // Duplicate check enabled?
         if (SimpleForms::$plugin->getSettings()->duplicateCheckEnabled) {
-            if (! $this->_verifyToken('duplicate')) {
+            if (!$this->_verifyToken('duplicate')) {
                 return false;
             }
         }
 
         // Origin check enabled?
         if (SimpleForms::$plugin->getSettings()->originCheckEnabled) {
-            if (! $this->_verifyOrigin()) {
+            if (!$this->_verifyOrigin()) {
                 return false;
             }
         }
 
         // Fire an 'onVerifyAntispam' event
         $event = new AntiSpamEvent([
-            'formHandle' => $formHandle,
+            'formHandle'    => $formHandle,
             'performAction' => true,
         ]);
         $this->trigger(self::EVENT_VERIFY_ANTI_SPAM, $event);
 
         // Is the event letting us now it was still spam?
-        if (! $event->performAction) {
+        if (!$event->performAction) {
             return false;
         }
 
@@ -144,9 +147,10 @@ class AntiSpamService extends Component
      *
      * @param string $fieldName
      *
-     * @return bool|string
      * @throws \Twig_Error_Loader
      * @throws \yii\base\Exception
+     *
+     * @return bool|string
      */
     private function _renderHoneypot($fieldName)
     {
@@ -156,9 +160,9 @@ class AntiSpamService extends Component
         }
 
         // Render HTML
-        return Craft::$app->getView()->renderTemplate('honeypot', array(
-            'fieldName' => $fieldName
-        ));
+        return Craft::$app->getView()->renderTemplate('honeypot', [
+            'fieldName' => $fieldName,
+        ]);
     }
 
     /**
@@ -179,6 +183,7 @@ class AntiSpamService extends Component
         if (Craft::$app->request->getBodyParam($fieldName)) {
             return false;
         }
+
         return true;
     }
 
@@ -187,21 +192,22 @@ class AntiSpamService extends Component
      *
      * @param int $seconds
      *
-     * @return bool|string
      * @throws \Twig_Error_Loader
      * @throws \yii\base\Exception
+     *
+     * @return bool|string
      */
     private function _renderTime($seconds)
     {
         // Validate seconds
-        if (empty($seconds) || ! is_numeric($seconds) || $seconds <= 0) {
+        if (empty($seconds) || !is_numeric($seconds) || $seconds <= 0) {
             return false;
         }
 
         // Render HTML
-        return Craft::$app->getView()->renderTemplate('time', array(
-            'time' => time()
-        ));
+        return Craft::$app->getView()->renderTemplate('time', [
+            'time' => time(),
+        ]);
     }
 
     /**
@@ -214,14 +220,14 @@ class AntiSpamService extends Component
     private function _verifyTime($seconds)
     {
         // Validate seconds
-        if (empty($seconds) || ! is_numeric($seconds) || $seconds <= 0) {
+        if (empty($seconds) || !is_numeric($seconds) || $seconds <= 0) {
             return false;
         }
 
         // Validate submission
         $currentTime = time();
-        $renderTime  = (int) Craft::$app->getRequest()->getBodyParam('__UATIME', time());
-        $difference  = ($currentTime - $renderTime);
+        $renderTime = (int) Craft::$app->getRequest()->getBodyParam('__UATIME', time());
+        $difference = ($currentTime - $renderTime);
         $minimumTime = (int) $seconds;
 
         return (bool) ($difference > $minimumTime);
@@ -235,10 +241,10 @@ class AntiSpamService extends Component
     private function _renderOrigin()
     {
         // Render HTML
-        return Craft::$app->getView()->renderTemplate('origin', array(
+        return Craft::$app->getView()->renderTemplate('origin', [
             'domain'    => $this->_getHash(Craft::$app->getRequest()->getHostInfo()),
-            'userAgent' => $this->_getHash(Craft::$app->getRequest()->getUserAgent())
-        ));
+            'userAgent' => $this->_getHash(Craft::$app->getRequest()->getUserAgent()),
+        ]);
     }
 
     /**
@@ -254,10 +260,9 @@ class AntiSpamService extends Component
         $domain = $this->_getHash(Craft::$app->getRequest()->getHostInfo());
         $userAgent = $this->_getHash(Craft::$app->getRequest()->getUserAgent());
 
-        if (! $renderDomain || $renderDomain != $domain) {
+        if (!$renderDomain || $renderDomain != $domain) {
             return false;
-        }
-        elseif (! $renderUserAgent || $renderUserAgent != $userAgent) {
+        } elseif (!$renderUserAgent || $renderUserAgent != $userAgent) {
             return false;
         }
 
@@ -273,20 +278,25 @@ class AntiSpamService extends Component
         $token = uniqid();
 
         // Create session variable
-        Craft::$app->getSession()->set('simpleFormsToken_' . $suffix, $token);
+        Craft::$app->getSession()->set('simpleFormsToken_'.$suffix, $token);
     }
 
     /**
      * Verify token.
      *
+     * @param $suffix
+     *
+     * @throws \craft\errors\MissingComponentException
+     *
      * @return bool
      */
     private function _verifyToken($suffix)
     {
-        $tokenName = 'simpleFormsToken_' . $suffix;
+        $tokenName = 'simpleFormsToken_'.$suffix;
         if (Craft::$app->getSession()->get($tokenName)) {
             // We got a token, so this is a valid submission
             Craft::$app->getSession()->remove($tokenName);
+
             return true;
         }
 

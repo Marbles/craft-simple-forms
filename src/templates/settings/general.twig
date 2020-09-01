@@ -55,4 +55,14 @@
         warning:      'bccEmailAddress' in overrides ? configWarning('bccEmailAddress'),
         value: settings.bccEmailAddress,
     }) }}
+
+    {{ forms.lightswitchField({
+        label: 'Use injected CSRF Input'|t('simple-forms'),
+        instructions: 'Enable this to inject the CSRF input using JavaScript, useful when you have full page caching on your website.'|t('simple-forms'),
+        id: 'useInjectedCsrfInput',
+        name: 'settings[useInjectedCsrfInput]',
+        disabled:     'useInjectedCsrfInput' in overrides,
+        warning:      'useInjectedCsrfInput' in overrides ? configWarning('useInjectedCsrfInput'),
+        on: settings.useInjectedCsrfInput == true,
+    }) }}
 {% endblock %}

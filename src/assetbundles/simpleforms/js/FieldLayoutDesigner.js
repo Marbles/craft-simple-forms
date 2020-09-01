@@ -1,3 +1,4 @@
+/* global Craft, Garnish */
 (function($) {
 
     Craft.SimpleFormsFieldLayoutDesigner = Craft.FieldLayoutDesigner.extend(

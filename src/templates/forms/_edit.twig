@@ -5,6 +5,7 @@
 {% set fullPageForm = true %}
 {% set saveShortcutRedirect = 'simple-forms/forms/edit/{id}' %}
 {% set title = (formId is defined ? 'Edit form'|t('simple-forms') : 'New form'|t('simple-forms')) %}
+{% set formGroups = craft.simpleForms.getAllFormGroups('id') %}
 
 {% set crumbs = [
     { label: craft.simpleForms.name, url: url('simple-forms') },

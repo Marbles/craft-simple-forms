@@ -1,14 +1,10 @@
 <?php
+
 namespace rias\simpleforms\elements\db;
 
 use Craft;
-use craft\base\FieldInterface;
-use craft\db\Query;
 use craft\elements\db\ElementQuery;
 use craft\helpers\Db;
-use ns\prefix\elements\Product;
-use rias\simpleforms\elements\Form;
-use rias\simpleforms\SimpleForms;
 
 class SubmissionsQuery extends ElementQuery
 {
@@ -82,7 +78,7 @@ class SubmissionsQuery extends ElementQuery
                            {{%simple-forms_forms}}.name as formName');
 
         if ($this->id) {
-            $this->andWhere(Db::parseParam('simple-forms_submissions.id', $this->id));
+            $this->andWhere(Db::parseParam('simple-forms_submissions.id', (int) $this->id));
         }
         if ($this->authorId) {
             $this->andWhere(Db::parseParam('simple-forms_submissions.authorId', $this->authorId));
@@ -101,7 +97,7 @@ class SubmissionsQuery extends ElementQuery
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     protected function customFields(): array
     {
